@@ -109,7 +109,8 @@
 @layer components {
   /* Live Stream Components */
   .live-indicator {
-    @apply bg-live-indicator text-white px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wide;
+    background-color: hsl(var(--live-indicator));
+    @apply text-white px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wide;
     animation: pulse-live 2s infinite;
   }
   
