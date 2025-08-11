@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -121,7 +122,8 @@
   }
   
   .gift-button {
-    @apply bg-gradient-gift text-white px-4 py-2 rounded-full font-bold shadow-gift;
+    @apply bg-gradient-to-r from-gift-gold to-yellow-400 text-white px-4 py-2 rounded-full font-bold;
+    box-shadow: var(--shadow-gift);
     transition: all var(--transition-normal) ease;
   }
   
@@ -139,12 +141,15 @@
   }
   
   .stream-card {
-    @apply bg-gradient-card rounded-2xl overflow-hidden shadow-card border border-border/50;
+    background: var(--gradient-card);
+    @apply rounded-2xl overflow-hidden border border-border/50;
+    box-shadow: var(--shadow-card);
     transition: all var(--transition-normal) ease;
   }
   
   .stream-card:hover {
-    @apply scale-[1.02] shadow-neon;
+    @apply scale-[1.02];
+    box-shadow: var(--shadow-neon);
   }
 }
 
