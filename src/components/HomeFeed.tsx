@@ -19,9 +19,12 @@ interface HomeFeedProps {
   onStreamSelect: (streamId: string) => void;
   onGoLive: () => void;
   onProfileClick: () => void;
+  onNotificationClick: () => void;
+  onWalletClick: () => void;
+  onChatClick: () => void;
 }
 
-const HomeFeed = ({ onStreamSelect, onGoLive, onProfileClick }: HomeFeedProps) => {
+const HomeFeed = ({ onStreamSelect, onGoLive, onProfileClick, onNotificationClick, onWalletClick, onChatClick }: HomeFeedProps) => {
   const [activeFilter, setActiveFilter] = useState("Popular");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -102,11 +105,11 @@ const HomeFeed = ({ onStreamSelect, onGoLive, onProfileClick }: HomeFeedProps) =
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-black text-gradient-primary">Demo Streaming App</h1>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative" onClick={onNotificationClick}>
               <Bell className="w-5 h-5" />
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
             </Button>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" onClick={onWalletClick}>
               <Wallet className="w-5 h-5" />
             </Button>
           </div>
@@ -208,7 +211,11 @@ const HomeFeed = ({ onStreamSelect, onGoLive, onProfileClick }: HomeFeedProps) =
             <span className="text-xs">Discover</span>
           </Button>
           
-          <Button variant="ghost" size="icon" className="flex-col gap-1 h-auto py-2">
+          <Button 
+            variant="ghost" 
+            className="flex flex-col items-center gap-1 h-auto py-2"
+            onClick={onChatClick}
+          >
             <MessageCircle className="w-5 h-5" />
             <span className="text-xs">Chats</span>
           </Button>
@@ -223,7 +230,11 @@ const HomeFeed = ({ onStreamSelect, onGoLive, onProfileClick }: HomeFeedProps) =
             <Plus className="w-6 h-6" />
           </Button>
 
-          <Button variant="ghost" size="icon" className="flex-col gap-1 h-auto py-2">
+          <Button 
+            variant="ghost" 
+            className="flex flex-col items-center gap-1 h-auto py-2"
+            onClick={onWalletClick}
+          >
             <Wallet className="w-5 h-5" />
             <span className="text-xs">Wallet</span>
           </Button>

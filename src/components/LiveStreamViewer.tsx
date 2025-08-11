@@ -20,6 +20,7 @@ interface LiveStreamViewerProps {
   streamId: string;
   onBack: () => void;
   onGiftPanel: () => void;
+  giftAnimation?: string | null;
 }
 
 interface ChatMessage {
@@ -38,7 +39,7 @@ interface FloatingHeart {
   y: number;
 }
 
-const LiveStreamViewer = ({ streamId, onBack, onGiftPanel }: LiveStreamViewerProps) => {
+const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: externalGiftAnimation }: LiveStreamViewerProps) => {
   const [message, setMessage] = useState("");
   const [isFollowing, setIsFollowing] = useState(false);
   const [likeCount, setLikeCount] = useState(1247);
@@ -121,6 +122,13 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel }: LiveStreamViewerPro
     setGiftAnimation(giftType);
     setTimeout(() => setGiftAnimation(null), 2000);
   };
+
+  // Update gift animation when external prop changes
+  useEffect(() => {
+    if (externalGiftAnimation) {
+      setGiftAnimation(externalGiftAnimation);
+    }
+  }, [externalGiftAnimation]);
 
   const handleFollow = () => {
     setIsFollowing(!isFollowing);
@@ -277,26 +285,90 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel }: LiveStreamViewerPro
 
         {/* Gift Animations */}
         <AnimatePresence>
-          {giftAnimation && (
+          {(giftAnimation || externalGiftAnimation) && (
             <motion.div
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0 }}
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
             >
               <div className="text-center">
-                <motion.div
-                  className="text-6xl mb-4"
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 0.5, repeat: 3 }}
-                >
-                  {giftAnimation === 'rose' ? '🌹' : 
-                   giftAnimation === 'fireworks' ? '🎆' : '👑'}
-                </motion.div>
+                {/* Enhanced Gift Animations */}
+                {((giftAnimation || externalGiftAnimation) === 'float') && (
+                  <motion.div
+                    initial={{ y: 100, opacity: 0 }}
+                    animate={{ y: -100, opacity: [0, 1, 1, 0] }}
+                    transition={{ duration: 3, ease: "easeOut" }}
+                    className="text-6xl"
+                  >
+                    🌹
+                  </motion.div>
+                )}
+                
+                {((giftAnimation || externalGiftAnimation) === 'explode') && (
+                  <>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: [0, 2, 1] }}
+                      transition={{ duration: 1 }}
+                      className="text-8xl mb-4"
+                    >
+                      🎆
+                    </motion.div>
+                    {[...Array(8)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ scale: 0, x: 0, y: 0 }}
+                        animate={{ 
+                          scale: 1, 
+                          x: (Math.cos(i * 45 * Math.PI / 180) * 200),
+                          y: (Math.sin(i * 45 * Math.PI / 180) * 200),
+                          opacity: [1, 0]
+                        }}
+                        transition={{ duration: 2, delay: 0.5 }}
+                        className="absolute text-2xl"
+                      >
+                        ✨
+                      </motion.div>
+                    ))}
+                  </>
+                )}
+                
+                {((giftAnimation || externalGiftAnimation) === 'royal') && (
+                  <motion.div
+                    initial={{ y: -50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 1 }}
+                    className="text-center"
+                  >
+                    <motion.div
+                      animate={{ rotate: [0, 5, -5, 0] }}
+                      transition={{ duration: 0.5, repeat: 4 }}
+                      className="text-8xl mb-4"
+                    >
+                      👑
+                    </motion.div>
+                    <div className="text-yellow-400 text-4xl font-black mb-2">CROWN!</div>
+                    <div className="w-full h-2 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 animate-pulse" />
+                  </motion.div>
+                )}
+                
+                {/* Default animation for other gift types */}
+                {!['float', 'explode', 'royal'].includes(giftAnimation || externalGiftAnimation || '') && (giftAnimation || externalGiftAnimation) && (
+                  <motion.div
+                    className="text-6xl mb-4"
+                    animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.2, 1] }}
+                    transition={{ duration: 0.5, repeat: 3 }}
+                  >
+                    🎁
+                  </motion.div>
+                )}
+                
                 <motion.p
                   className="text-2xl font-black text-white bg-black/50 px-4 py-2 rounded-full"
-                  initial={{ y: 20 }}
-                  animate={{ y: 0 }}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
                 >
                   Gift Received!
                 </motion.p>

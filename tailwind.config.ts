@@ -150,6 +150,10 @@ export default {
 				'float-up': 'float-up 3s ease-out infinite',
 				'bounce-in': 'bounce-in 0.6s ease-out',
 				'gift-burst': 'gift-burst 1s ease-out'
+			},
+			backgroundImage: {
+				"gradient-primary": "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))",
+				"gradient-gift": "linear-gradient(135deg, hsl(320, 65%, 52%), hsl(280, 100%, 70%))",
 			}
 		}
 	},

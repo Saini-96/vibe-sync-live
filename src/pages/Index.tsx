@@ -7,6 +7,9 @@ import LiveStreamViewer from "@/components/LiveStreamViewer";
 import StreamerInterface from "@/components/StreamerInterface";
 import GiftPanel from "@/components/GiftPanel";
 import UserProfile from "@/components/UserProfile";
+import NotificationSystem from "@/components/NotificationSystem";
+import WalletModal from "@/components/WalletModal";
+import ChatModal from "@/components/ChatModal";
 
 type AppState = 
   | 'splash'
@@ -21,10 +24,15 @@ const Index = () => {
   const [currentState, setCurrentState] = useState<AppState>('splash');
   const [selectedStreamId, setSelectedStreamId] = useState<string>("");
   const [showGiftPanel, setShowGiftPanel] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showWallet, setShowWallet] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [giftAnimation, setGiftAnimation] = useState<string | null>(null);
 
   const handleGiftSent = (giftType: string) => {
     setShowGiftPanel(false);
-    // In a real app, this would trigger animations in the viewer
+    setGiftAnimation(giftType);
+    setTimeout(() => setGiftAnimation(null), 3000);
     console.log("Gift sent:", giftType);
   };
 
@@ -46,14 +54,31 @@ const Index = () => {
         
       case 'home':
         return (
-          <HomeFeed 
-            onStreamSelect={(streamId) => {
-              setSelectedStreamId(streamId);
-              setCurrentState('viewer');
-            }}
-            onGoLive={() => setCurrentState('streamer')}
-            onProfileClick={() => setCurrentState('profile')}
-          />
+          <>
+            <HomeFeed 
+              onStreamSelect={(streamId) => {
+                setSelectedStreamId(streamId);
+                setCurrentState('viewer');
+              }}
+              onGoLive={() => setCurrentState('streamer')}
+              onProfileClick={() => setCurrentState('profile')}
+              onNotificationClick={() => setShowNotifications(true)}
+              onWalletClick={() => setShowWallet(true)}
+              onChatClick={() => setShowChat(true)}
+            />
+            <NotificationSystem 
+              isOpen={showNotifications}
+              onClose={() => setShowNotifications(false)}
+            />
+            <WalletModal 
+              isOpen={showWallet}
+              onClose={() => setShowWallet(false)}
+            />
+            <ChatModal 
+              isOpen={showChat}
+              onClose={() => setShowChat(false)}
+            />
+          </>
         );
         
       case 'viewer':
@@ -63,6 +88,7 @@ const Index = () => {
               streamId={selectedStreamId}
               onBack={() => setCurrentState('home')}
               onGiftPanel={() => setShowGiftPanel(true)}
+              giftAnimation={giftAnimation}
             />
             <GiftPanel 
               isOpen={showGiftPanel}
