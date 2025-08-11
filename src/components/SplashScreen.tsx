@@ -41,7 +41,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.6 }}
         >
-          TangoLive
+          Demo Streaming App
         </motion.h1>
         <motion.p
           className="text-lg text-white/80 font-medium"

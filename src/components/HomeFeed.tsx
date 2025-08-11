@@ -100,7 +100,7 @@ const HomeFeed = ({ onStreamSelect, onGoLive, onProfileClick }: HomeFeedProps) =
       {/* Header */}
       <div className="sticky top-0 bg-background/80 backdrop-blur-lg border-b border-border p-4 z-10">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-black text-gradient-primary">TangoLive</h1>
+          <h1 className="text-2xl font-black text-gradient-primary">Demo Streaming App</h1>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />

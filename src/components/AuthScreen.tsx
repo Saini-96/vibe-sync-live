@@ -50,7 +50,7 @@ const AuthScreen = ({ onComplete, onBack }: AuthScreenProps) => {
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="w-6 h-6" />
         </Button>
-        <h1 className="text-xl font-bold text-gradient-primary">TangoLive</h1>
+        <h1 className="text-xl font-bold text-gradient-primary">Demo Streaming App</h1>
         <div className="w-10" />
       </div>
 
