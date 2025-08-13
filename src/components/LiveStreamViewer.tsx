@@ -125,9 +125,10 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
 
   // Update gift animation when external prop changes
   useEffect(() => {
-    if (externalGiftAnimation) {
-      setGiftAnimation(externalGiftAnimation);
-    }
+    if (!externalGiftAnimation) return;
+    setGiftAnimation(externalGiftAnimation);
+    const timeout = setTimeout(() => setGiftAnimation(null), 2500);
+    return () => clearTimeout(timeout);
   }, [externalGiftAnimation]);
 
   const handleFollow = () => {
@@ -283,9 +284,8 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
           ))}
         </AnimatePresence>
 
-        {/* Gift Animations */}
         <AnimatePresence>
-          {(giftAnimation || externalGiftAnimation) && (
+          {giftAnimation && (
             <motion.div
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -294,7 +294,7 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
             >
               <div className="text-center">
                 {/* Enhanced Gift Animations */}
-                {((giftAnimation || externalGiftAnimation) === 'float') && (
+                {(giftAnimation === 'float') && (
                   <motion.div
                     initial={{ y: 100, opacity: 0 }}
                     animate={{ y: -100, opacity: [0, 1, 1, 0] }}
@@ -305,7 +305,7 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                   </motion.div>
                 )}
                 
-                {((giftAnimation || externalGiftAnimation) === 'explode') && (
+                {(giftAnimation === 'explode') && (
                   <>
                     <motion.div
                       initial={{ scale: 0 }}
@@ -334,7 +334,7 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                   </>
                 )}
                 
-                {((giftAnimation || externalGiftAnimation) === 'royal') && (
+                {(giftAnimation === 'royal') && (
                   <motion.div
                     initial={{ y: -50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -354,7 +354,7 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                 )}
                 
                 {/* Default animation for other gift types */}
-                {!['float', 'explode', 'royal'].includes(giftAnimation || externalGiftAnimation || '') && (giftAnimation || externalGiftAnimation) && (
+                {!['float', 'explode', 'royal'].includes(giftAnimation || '') && giftAnimation && (
                   <motion.div
                     className="text-6xl mb-4"
                     animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.2, 1] }}
