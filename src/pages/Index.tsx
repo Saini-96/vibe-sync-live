@@ -94,6 +94,7 @@ const Index = () => {
               isOpen={showGiftPanel}
               onClose={() => setShowGiftPanel(false)}
               onGiftSent={handleGiftSent}
+              onTopUp={() => { setShowGiftPanel(false); setShowWallet(true); }}
             />
           </>
         );

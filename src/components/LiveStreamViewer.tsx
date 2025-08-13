@@ -15,6 +15,9 @@ import {
   Flag
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import ViewerListModal, { Viewer } from "@/components/ViewerListModal";
+import { toast } from "@/components/ui/use-toast";
+import { useModeration } from "@/hooks/useModeration";
 
 interface LiveStreamViewerProps {
   streamId: string;
@@ -46,6 +49,18 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
   const [viewerCount, setViewerCount] = useState(24123);
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
   const [giftAnimation, setGiftAnimation] = useState<string | null>(null);
+
+  const [isViewerListOpen, setIsViewerListOpen] = useState(false);
+  const [viewers] = useState<Viewer[]>([
+    { id: "u1", name: "User123", avatarUrl: "https://i.pravatar.cc/100?img=1", totalCoins: 120 },
+    { id: "u2", name: "Luna", avatarUrl: "https://i.pravatar.cc/100?img=2", totalCoins: 540 },
+    { id: "u3", name: "NovaStar", avatarUrl: "https://i.pravatar.cc/100?img=3", totalCoins: 15 },
+    { id: "u4", name: "BeatRider", avatarUrl: "https://i.pravatar.cc/100?img=4", totalCoins: 0 },
+    { id: "u5", name: "Melody", avatarUrl: "https://i.pravatar.cc/100?img=5", totalCoins: 1000 },
+  ]);
+  const [bannedUntil, setBannedUntil] = useState<number | null>(null);
+  const [foulStrikes, setFoulStrikes] = useState(0);
+  const { check } = useModeration();
 
   // Mock stream data
   const streamData = {
@@ -87,18 +102,39 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
   ]);
 
   const handleSendMessage = () => {
-    if (message.trim()) {
-      const newMessage: ChatMessage = {
-        id: Date.now().toString(),
-        username: "You",
-        message: message.trim(),
-        timestamp: new Date(),
-      };
-      setChatMessages(prev => [...prev, newMessage]);
-      setMessage("");
+    const now = Date.now();
+    if (bannedUntil && now < bannedUntil) {
+      toast({ title: "You're temporarily muted", description: "Please wait before sending more messages.", variant: "destructive" });
+      return;
     }
-  };
 
+    const trimmed = message.trim();
+    if (!trimmed) return;
+
+    const mod = check(trimmed);
+    if (mod.flagged) {
+      const next = foulStrikes + 1;
+      setFoulStrikes(next);
+      if (next >= 2) {
+        const muteFor = 10 * 60 * 1000; // 10 minutes
+        setBannedUntil(now + muteFor);
+        toast({ title: "Chat banned for 10 minutes", description: "Repeated abusive content detected.", variant: "destructive" });
+        setMessage("");
+        return;
+      }
+      toast({ title: "Inappropriate language", description: mod.reason || "Please be respectful. Further attempts will result in a 10-minute ban.", variant: "destructive" });
+      return;
+    }
+
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      username: "You",
+      message: trimmed,
+      timestamp: new Date(),
+    };
+    setChatMessages(prev => [...prev, newMessage]);
+    setMessage("");
+  };
   const handleLike = () => {
     setLikeCount(prev => prev + 1);
     
@@ -190,10 +226,15 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                   <h2 className="text-white font-bold">{streamData.streamer}</h2>
                   <div className="flex items-center gap-2">
                     <Badge className="live-indicator text-xs">LIVE</Badge>
-                    <div className="viewer-count">
+                    <button
+                      type="button"
+                      onClick={() => setIsViewerListOpen(true)}
+                      className="viewer-count cursor-pointer hover:opacity-90 transition-opacity"
+                      aria-label="Viewers list"
+                    >
                       <Eye className="w-3 h-3 mr-1" />
                       {viewerCount.toLocaleString()}
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>

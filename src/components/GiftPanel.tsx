@@ -8,7 +8,9 @@ interface GiftPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onGiftSent: (giftType: string) => void;
+  onTopUp?: () => void;
 }
+
 
 interface GiftItem {
   id: string;
@@ -19,7 +21,7 @@ interface GiftItem {
   animation: string;
 }
 
-const GiftPanel = ({ isOpen, onClose, onGiftSent }: GiftPanelProps) => {
+const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp }: GiftPanelProps) => {
   const [coinBalance, setCoinBalance] = useState(1250);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -89,7 +91,7 @@ const GiftPanel = ({ isOpen, onClose, onGiftSent }: GiftPanelProps) => {
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 500 }}
-          className="w-full bg-card rounded-t-3xl max-h-[80vh] overflow-hidden"
+          className="w-full bg-card/70 backdrop-blur-lg border border-white/10 rounded-t-3xl max-h-[80vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -143,7 +145,7 @@ const GiftPanel = ({ isOpen, onClose, onGiftSent }: GiftPanelProps) => {
                     <span className="text-sm text-muted-foreground">coins</span>
                   </div>
                 </div>
-                <Button variant="gift" size="sm" className="rounded-full">
+                <Button variant="gift" size="sm" className="rounded-full" onClick={() => { onTopUp?.(); }}>
                   <Plus className="w-4 h-4 mr-1" />
                   Top Up
                 </Button>
