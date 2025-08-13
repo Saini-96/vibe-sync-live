@@ -189,10 +189,18 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
         timestamp: new Date(),
       };
       
-      setChatMessages(prev => [...prev.slice(-20), newMessage]);
+      setChatMessages(prev => [...prev, newMessage]);
     }, 5000);
 
     return () => clearInterval(interval);
+  }, []);
+
+  // Prune chat messages older than 2 minutes
+  useEffect(() => {
+    const prune = setInterval(() => {
+      setChatMessages(prev => prev.filter(m => Date.now() - m.timestamp.getTime() < 2 * 60 * 1000));
+    }, 10000);
+    return () => clearInterval(prune);
   }, []);
 
   return (
@@ -279,25 +287,28 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
         )}
 
         {/* Chat Messages */}
-        <div className="absolute left-4 bottom-32 right-24 max-h-64 overflow-hidden">
-          <div className="space-y-1">
-            {chatMessages.slice(-8).map((msg) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className={`chat-message max-w-xs ${msg.isPinned ? 'hidden' : ''}`}
-              >
-                <span className={`font-bold text-sm ${
-                  msg.isStreamer ? 'text-yellow-400' : 
-                  msg.isModerator ? 'text-green-400' : 'text-blue-400'
-                }`}>
-                  {msg.username}:
-                </span>
-                <span className="ml-2 text-white">{msg.message}</span>
-              </motion.div>
-            ))}
-          </div>
+        <div className="absolute left-4 bottom-32 right-24 max-h-64 overflow-y-auto pr-2">
+          <AnimatePresence initial={false}>
+            <div className="space-y-1">
+              {chatMessages
+                .filter((m) => !m.isPinned)
+                .map((msg) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.25 }}
+                    className="chat-message max-w-xs"
+                  >
+                    <span className={`font-bold text-sm ${msg.isStreamer ? 'text-yellow-400' : msg.isModerator ? 'text-green-400' : 'text-blue-400'}`}>
+                      {msg.username}:
+                    </span>
+                    <span className="ml-2 text-white">{msg.message}</span>
+                  </motion.div>
+                ))}
+            </div>
+          </AnimatePresence>
         </div>
 
         {/* Floating Hearts */}
@@ -486,6 +497,7 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
           </div>
         </div>
       </div>
+      <ViewerListModal isOpen={isViewerListOpen} onClose={() => setIsViewerListOpen(false)} viewers={viewers} />
     </div>
   );
 };

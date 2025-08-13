@@ -96,6 +96,10 @@ const Index = () => {
               onGiftSent={handleGiftSent}
               onTopUp={() => { setShowGiftPanel(false); setShowWallet(true); }}
             />
+            <WalletModal 
+              isOpen={showWallet}
+              onClose={() => setShowWallet(false)}
+            />
           </>
         );
         
