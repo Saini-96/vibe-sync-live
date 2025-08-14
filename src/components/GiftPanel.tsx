@@ -7,8 +7,10 @@ import { motion, AnimatePresence } from "framer-motion";
 interface GiftPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  onGiftSent: (giftType: string) => void;
+  onGiftSent: (giftData: { id: string; name: string; emoji: string; cost: number; animation: string }) => void;
   onTopUp?: () => void;
+  coinBalance?: number;
+  onCoinDeduct?: (amount: number) => void;
 }
 
 
@@ -21,8 +23,7 @@ interface GiftItem {
   animation: string;
 }
 
-const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp }: GiftPanelProps) => {
-  const [coinBalance, setCoinBalance] = useState(1250);
+const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp, coinBalance = 1250, onCoinDeduct }: GiftPanelProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const gifts: GiftItem[] = [
@@ -54,14 +55,28 @@ const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp }: GiftPanelProps) => 
 
   const handleSendGift = (gift: GiftItem) => {
     if (coinBalance >= gift.cost) {
-      setCoinBalance(prev => prev - gift.cost);
-      onGiftSent(gift.animation);
+      // Deduct coins
+      onCoinDeduct?.(gift.cost);
+      
+      // Send gift data
+      onGiftSent({
+        id: gift.id,
+        name: gift.name,
+        emoji: gift.emoji,
+        cost: gift.cost,
+        animation: gift.animation
+      });
+      
+      // Close panel immediately after sending
+      onClose();
       
       // Show success feedback
-      // In a real app, this would also send to backend
+      // toast({ title: "Gift Sent!", description: `You sent a ${gift.name} for ${gift.cost} coins!` });
     } else {
-      // Show insufficient coins message
-      alert("Not enough coins! Top up to send this gift.");
+      // Show insufficient coins message with top up option
+      if (confirm(`You need ${gift.cost - coinBalance} more coins to send this gift. Would you like to top up now?`)) {
+        onTopUp?.();
+      }
     }
   };
 
@@ -91,7 +106,7 @@ const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp }: GiftPanelProps) => 
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 500 }}
-          className="w-full bg-card/70 backdrop-blur-lg border border-white/10 rounded-t-3xl max-h-[80vh] overflow-hidden"
+          className="w-full bg-card/30 backdrop-blur-lg border border-white/10 rounded-t-3xl max-h-[60vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -155,7 +170,7 @@ const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp }: GiftPanelProps) => 
 
           {/* Gifts Grid */}
           <div className="px-4 pb-6">
-            <div className="grid grid-cols-4 gap-3 max-h-64 overflow-y-auto">
+            <div className="grid grid-cols-4 gap-3 max-h-48 overflow-y-auto scrollbar-hide">
               {filteredGifts.map((gift, index) => (
                 <motion.div
                   key={gift.id}

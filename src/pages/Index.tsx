@@ -28,12 +28,13 @@ const Index = () => {
   const [showWallet, setShowWallet] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [giftAnimation, setGiftAnimation] = useState<string | null>(null);
+  const [coinBalance, setCoinBalance] = useState(1250);
 
-  const handleGiftSent = (giftType: string) => {
+  const handleGiftSent = (giftData: { id: string; name: string; emoji: string; cost: number; animation: string }) => {
     setShowGiftPanel(false);
-    setGiftAnimation(giftType);
+    setGiftAnimation(giftData.animation);
     setTimeout(() => setGiftAnimation(null), 3000);
-    console.log("Gift sent:", giftType);
+    console.log("Gift sent:", giftData);
   };
 
   const renderCurrentScreen = () => {
@@ -89,12 +90,16 @@ const Index = () => {
               onBack={() => setCurrentState('home')}
               onGiftPanel={() => setShowGiftPanel(true)}
               giftAnimation={giftAnimation}
+              coinBalance={coinBalance}
+              onCoinDeduct={(amount) => setCoinBalance(prev => prev - amount)}
             />
-            <GiftPanel 
+            <GiftPanel
               isOpen={showGiftPanel}
               onClose={() => setShowGiftPanel(false)}
               onGiftSent={handleGiftSent}
-              onTopUp={() => { setShowGiftPanel(false); setShowWallet(true); }}
+              onTopUp={() => setShowWallet(true)}
+              coinBalance={coinBalance}
+              onCoinDeduct={(amount) => setCoinBalance(prev => prev - amount)}
             />
             <WalletModal 
               isOpen={showWallet}
