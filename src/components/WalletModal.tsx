@@ -17,6 +17,8 @@ import { motion, AnimatePresence } from "framer-motion";
 interface WalletModalProps {
   isOpen: boolean;
   onClose: () => void;
+  coinBalance?: number;
+  onCoinUpdate?: (amount: number) => void;
 }
 
 interface Transaction {
@@ -27,9 +29,8 @@ interface Transaction {
   timestamp: Date;
 }
 
-const WalletModal = ({ isOpen, onClose }: WalletModalProps) => {
+const WalletModal = ({ isOpen, onClose, coinBalance = 1250, onCoinUpdate }: WalletModalProps) => {
   const [activeTab, setActiveTab] = useState<'balance' | 'topup' | 'history'>('balance');
-  const [coinBalance, setCoinBalance] = useState(1250);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
 
@@ -67,7 +68,7 @@ const WalletModal = ({ isOpen, onClose }: WalletModalProps) => {
   ];
 
   const handleTopUp = (amount: number) => {
-    setCoinBalance(prev => prev + amount);
+    onCoinUpdate?.(coinBalance + amount);
     // In a real app, this would process payment
     setActiveTab('balance');
   };

@@ -74,6 +74,8 @@ const Index = () => {
             <WalletModal 
               isOpen={showWallet}
               onClose={() => setShowWallet(false)}
+              coinBalance={coinBalance}
+              onCoinUpdate={setCoinBalance}
             />
             <ChatModal 
               isOpen={showChat}
@@ -104,6 +106,8 @@ const Index = () => {
             <WalletModal 
               isOpen={showWallet}
               onClose={() => setShowWallet(false)}
+              coinBalance={coinBalance}
+              onCoinUpdate={setCoinBalance}
             />
           </>
         );

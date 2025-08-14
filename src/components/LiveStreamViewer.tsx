@@ -80,8 +80,6 @@ const LiveStreamViewer = ({
   const [giftAnimation, setGiftAnimation] = useState<string | null>(null);
   const [particleEffects, setParticleEffects] = useState<ParticleEffect[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [isScrolledUp, setIsScrolledUp] = useState(false);
-  const [newMessageCount, setNewMessageCount] = useState(0);
   const [showReportModal, setShowReportModal] = useState(false);
   const [currentGift, setCurrentGift] = useState<GiftData | null>(null);
   
@@ -187,12 +185,6 @@ const LiveStreamViewer = ({
     setChatMessages(prev => [...prev, newMessage]);
     setMessage("");
     
-    // Scroll to bottom when user sends message
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-      setIsScrolledUp(false);
-      setNewMessageCount(0);
-    }
   };
   const handleLike = () => {
     setLikeCount(prev => prev + 1);
@@ -279,20 +271,6 @@ const LiveStreamViewer = ({
     setIsFollowing(!isFollowing);
   };
 
-  // Handle chat scroll detection
-  const handleChatScroll = () => {
-    if (!chatContainerRef.current) return;
-    
-    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-    const isAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
-    
-    if (!isAtBottom && !isScrolledUp) {
-      setIsScrolledUp(true);
-    } else if (isAtBottom && isScrolledUp) {
-      setIsScrolledUp(false);
-      setNewMessageCount(0);
-    }
-  };
 
   // Simulate new chat messages
   useEffect(() => {
@@ -313,15 +291,10 @@ const LiveStreamViewer = ({
       };
       
       setChatMessages(prev => [...prev, newMessage]);
-      
-      // Increment new message count if scrolled up
-      if (isScrolledUp) {
-        setNewMessageCount(prev => prev + 1);
-      }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isScrolledUp]);
+  }, []);
 
   // Prune chat messages older than 2 minutes
   useEffect(() => {
@@ -429,64 +402,38 @@ const LiveStreamViewer = ({
         )}
 
         {/* Chat Messages */}
-        <div className="absolute left-4 bottom-32 right-24 max-h-64 relative">
-          {/* New Messages Indicator */}
-          {isScrolledUp && newMessageCount > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="absolute top-0 left-1/2 transform -translate-x-1/2 z-10 bg-primary/90 text-white px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm cursor-pointer"
-              onClick={() => {
-                if (chatContainerRef.current) {
-                  chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-                  setIsScrolledUp(false);
-                  setNewMessageCount(0);
-                }
-              }}
-            >
-              {newMessageCount} new message{newMessageCount > 1 ? 's' : ''}
-              <ChevronDown className="w-3 h-3 ml-1 inline" />
-            </motion.div>
-          )}
-          
+        <div className="absolute left-4 bottom-32 right-24 max-h-64">
           <div 
             ref={chatContainerRef}
             className="h-full overflow-y-auto scrollbar-hide"
-            onScroll={handleChatScroll}
           >
-            <AnimatePresence initial={false}>
-              <div className="space-y-1 pt-8">
-                {chatMessages
-                  .filter((m) => !m.isPinned)
-                  .map((msg) => (
-                    <motion.div
-                      key={msg.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.25 }}
-                      className={`chat-message max-w-xs ${msg.isGiftMessage ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg' : ''}`}
-                    >
-                      {msg.isGiftMessage ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">{msg.giftEmoji}</span>
-                          <div>
-                            <span className="font-bold text-sm text-yellow-400">Gift Alert!</span>
-                            <span className="ml-2 text-white">{msg.username} {msg.message}</span>
-                          </div>
+            <div className="space-y-1">
+              {chatMessages
+                .filter((m) => !m.isPinned)
+                .map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`chat-message max-w-xs ${msg.isGiftMessage ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg' : ''}`}
+                  >
+                    {msg.isGiftMessage ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{msg.giftEmoji}</span>
+                        <div>
+                          <span className="font-bold text-sm text-yellow-400">Gift Alert!</span>
+                          <span className="ml-2 text-white">{msg.username} {msg.message}</span>
                         </div>
-                      ) : (
-                        <>
-                          <span className={`font-bold text-sm ${msg.isStreamer ? 'text-yellow-400' : msg.isModerator ? 'text-green-400' : 'text-blue-400'}`}>
-                            {msg.username}:
-                          </span>
-                          <span className="ml-2 text-white">{msg.message}</span>
-                        </>
-                      )}
-                    </motion.div>
-                  ))}
-              </div>
-            </AnimatePresence>
+                      </div>
+                    ) : (
+                      <>
+                        <span className={`font-bold text-sm ${msg.isStreamer ? 'text-yellow-400' : msg.isModerator ? 'text-green-400' : 'text-blue-400'}`}>
+                          {msg.username}:
+                        </span>
+                        <span className="ml-2 text-white">{msg.message}</span>
+                      </>
+                    )}
+                  </div>
+                ))}
+            </div>
           </div>
         </div>
 
