@@ -28,13 +28,12 @@ const Index = () => {
   const [showWallet, setShowWallet] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [giftAnimation, setGiftAnimation] = useState<string | null>(null);
-  const [coinBalance, setCoinBalance] = useState(1250);
 
-  const handleGiftSent = (giftData: { id: string; name: string; emoji: string; cost: number; animation: string }) => {
+  const handleGiftSent = (giftType: string) => {
     setShowGiftPanel(false);
-    setGiftAnimation(giftData.animation);
+    setGiftAnimation(giftType);
     setTimeout(() => setGiftAnimation(null), 3000);
-    console.log("Gift sent:", giftData);
+    console.log("Gift sent:", giftType);
   };
 
   const renderCurrentScreen = () => {
@@ -74,8 +73,6 @@ const Index = () => {
             <WalletModal 
               isOpen={showWallet}
               onClose={() => setShowWallet(false)}
-              coinBalance={coinBalance}
-              onCoinUpdate={setCoinBalance}
             />
             <ChatModal 
               isOpen={showChat}
@@ -92,22 +89,16 @@ const Index = () => {
               onBack={() => setCurrentState('home')}
               onGiftPanel={() => setShowGiftPanel(true)}
               giftAnimation={giftAnimation}
-              coinBalance={coinBalance}
-              onCoinDeduct={(amount) => setCoinBalance(prev => prev - amount)}
             />
-            <GiftPanel
+            <GiftPanel 
               isOpen={showGiftPanel}
               onClose={() => setShowGiftPanel(false)}
               onGiftSent={handleGiftSent}
-              onTopUp={() => setShowWallet(true)}
-              coinBalance={coinBalance}
-              onCoinDeduct={(amount) => setCoinBalance(prev => prev - amount)}
+              onTopUp={() => { setShowGiftPanel(false); setShowWallet(true); }}
             />
             <WalletModal 
               isOpen={showWallet}
               onClose={() => setShowWallet(false)}
-              coinBalance={coinBalance}
-              onCoinUpdate={setCoinBalance}
             />
           </>
         );
