@@ -140,6 +140,8 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
 
   const [allMessages, setAllMessages] = useState<{ [key: string]: Message[] }>(messages);
 
+  const [chatUsersList, setChatUsersList] = useState<ChatUser[]>(chatUsers);
+
   const handleSendMessage = () => {
     if (message.trim() && activeChat) {
       const newMessage: Message = {
@@ -155,9 +157,25 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
         [activeChat]: [...(prev[activeChat] || []), newMessage]
       }));
       
-      // Clear unread count for active chat
+      // Clear unread count for active chat and mark as read
+      setChatUsersList(prev => prev.map(user => 
+        user.id === activeChat 
+          ? { ...user, unreadCount: 0, lastMessage: message, timestamp: new Date() }
+          : user
+      ));
+      
       setMessage("");
     }
+  };
+
+  // Clear unread count when opening a chat
+  const handleChatSelect = (userId: string) => {
+    setActiveChat(userId);
+    setChatUsersList(prev => prev.map(user => 
+      user.id === userId 
+        ? { ...user, unreadCount: 0 }
+        : user
+    ));
   };
 
   if (!isOpen) return null;
@@ -207,11 +225,13 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
 
             {/* Chat List */}
             <div className="flex-1 overflow-y-auto">
-              {filteredUsers.map((user) => (
+              {chatUsersList.filter(user =>
+                user.name.toLowerCase().includes(searchQuery.toLowerCase())
+              ).map((user) => (
                 <motion.div
                   key={user.id}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setActiveChat(user.id)}
+                  onClick={() => handleChatSelect(user.id)}
                   className={`p-4 border-b border-border cursor-pointer transition-colors hover:bg-muted/50 ${
                     activeChat === user.id ? 'bg-primary/10' : ''
                   }`}

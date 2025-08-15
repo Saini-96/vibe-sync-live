@@ -28,6 +28,7 @@ const Index = () => {
   const [showWallet, setShowWallet] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [giftAnimation, setGiftAnimation] = useState<string | null>(null);
+  const [coinBalance, setCoinBalance] = useState(1250);
 
   const handleGiftSent = (giftType: string) => {
     setShowGiftPanel(false);
@@ -73,6 +74,8 @@ const Index = () => {
             <WalletModal 
               isOpen={showWallet}
               onClose={() => setShowWallet(false)}
+              coinBalance={coinBalance}
+              onCoinUpdate={setCoinBalance}
             />
             <ChatModal 
               isOpen={showChat}
@@ -89,16 +92,22 @@ const Index = () => {
               onBack={() => setCurrentState('home')}
               onGiftPanel={() => setShowGiftPanel(true)}
               giftAnimation={giftAnimation}
+              coinBalance={coinBalance}
+              onCoinUpdate={setCoinBalance}
             />
             <GiftPanel 
               isOpen={showGiftPanel}
               onClose={() => setShowGiftPanel(false)}
               onGiftSent={handleGiftSent}
               onTopUp={() => { setShowGiftPanel(false); setShowWallet(true); }}
+              coinBalance={coinBalance}
+              onCoinUpdate={setCoinBalance}
             />
             <WalletModal 
               isOpen={showWallet}
               onClose={() => setShowWallet(false)}
+              coinBalance={coinBalance}
+              onCoinUpdate={setCoinBalance}
             />
           </>
         );

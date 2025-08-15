@@ -17,6 +17,8 @@ import { motion, AnimatePresence } from "framer-motion";
 interface WalletModalProps {
   isOpen: boolean;
   onClose: () => void;
+  coinBalance: number;
+  onCoinUpdate: (newBalance: number) => void;
 }
 
 interface Transaction {
@@ -27,15 +29,11 @@ interface Transaction {
   timestamp: Date;
 }
 
-const WalletModal = ({ isOpen, onClose }: WalletModalProps) => {
+const WalletModal = ({ isOpen, onClose, coinBalance, onCoinUpdate }: WalletModalProps) => {
   const [activeTab, setActiveTab] = useState<'balance' | 'topup' | 'history'>('balance');
-  const [coinBalance, setCoinBalance] = useState(1250);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
-
-  const quickAmounts = [100, 500, 1000, 2500, 5000, 10000];
-  
-  const transactions: Transaction[] = [
+  const [transactions, setTransactions] = useState<Transaction[]>([
     {
       id: "1",
       type: "gift_received",
@@ -64,12 +62,27 @@ const WalletModal = ({ isOpen, onClose }: WalletModalProps) => {
       description: "Stream earnings - 2 hours",
       timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4)
     }
-  ];
+  ]);
+
+  const quickAmounts = [100, 500, 1000, 2500, 5000, 10000];
 
   const handleTopUp = (amount: number) => {
-    setCoinBalance(prev => prev + amount);
-    // In a real app, this would process payment
+    const newBalance = coinBalance + amount;
+    onCoinUpdate(newBalance);
+    
+    // Add transaction to history
+    const newTransaction: Transaction = {
+      id: Date.now().toString(),
+      type: "purchase",
+      amount: amount,
+      description: `Coin Purchase - ${amount} coins`,
+      timestamp: new Date()
+    };
+    setTransactions(prev => [newTransaction, ...prev]);
+    
     setActiveTab('balance');
+    setSelectedAmount(null);
+    setCustomAmount("");
   };
 
   const formatTimestamp = (timestamp: Date) => {

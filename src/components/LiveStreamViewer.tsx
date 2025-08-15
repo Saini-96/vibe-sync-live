@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,18 +12,24 @@ import {
   Send,
   Pin,
   UserPlus,
-  Flag
+  Flag,
+  Smile,
+  ChevronDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ViewerListModal, { Viewer } from "@/components/ViewerListModal";
-import { toast } from "@/components/ui/use-toast";
-import { useModeration } from "@/hooks/useModeration";
+import ReportModal from "@/components/ReportModal";
+import EmojiPicker from "@/components/EmojiPicker";
+import { toast } from "@/hooks/use-toast";
+import { useAdvancedModeration } from "@/hooks/useAdvancedModeration";
 
 interface LiveStreamViewerProps {
   streamId: string;
   onBack: () => void;
   onGiftPanel: () => void;
   giftAnimation?: string | null;
+  coinBalance: number;
+  onCoinUpdate: (newBalance: number) => void;
 }
 
 interface ChatMessage {
@@ -42,7 +48,7 @@ interface FloatingHeart {
   y: number;
 }
 
-const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: externalGiftAnimation }: LiveStreamViewerProps) => {
+const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: externalGiftAnimation, coinBalance, onCoinUpdate }: LiveStreamViewerProps) => {
   const [message, setMessage] = useState("");
   const [isFollowing, setIsFollowing] = useState(false);
   const [likeCount, setLikeCount] = useState(1247);
@@ -58,9 +64,13 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
     { id: "u4", name: "BeatRider", avatarUrl: "https://i.pravatar.cc/100?img=4", totalCoins: 0 },
     { id: "u5", name: "Melody", avatarUrl: "https://i.pravatar.cc/100?img=5", totalCoins: 1000 },
   ]);
-  const [bannedUntil, setBannedUntil] = useState<number | null>(null);
-  const [foulStrikes, setFoulStrikes] = useState(0);
-  const { check } = useModeration();
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isScrolledUp, setIsScrolledUp] = useState(false);
+  const [showNewMessageIndicator, setShowNewMessageIndicator] = useState(false);
+  const { checkMessage, moderationState } = useAdvancedModeration();
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Mock stream data
   const streamData = {
@@ -102,27 +112,16 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
   ]);
 
   const handleSendMessage = () => {
-    const now = Date.now();
-    if (bannedUntil && now < bannedUntil) {
-      toast({ title: "You're temporarily muted", description: "Please wait before sending more messages.", variant: "destructive" });
-      return;
-    }
-
     const trimmed = message.trim();
     if (!trimmed) return;
 
-    const mod = check(trimmed);
+    const mod = checkMessage(trimmed);
     if (mod.flagged) {
-      const next = foulStrikes + 1;
-      setFoulStrikes(next);
-      if (next >= 2) {
-        const muteFor = 10 * 60 * 1000; // 10 minutes
-        setBannedUntil(now + muteFor);
-        toast({ title: "Chat banned for 10 minutes", description: "Repeated abusive content detected.", variant: "destructive" });
-        setMessage("");
-        return;
-      }
-      toast({ title: "Inappropriate language", description: mod.reason || "Please be respectful. Further attempts will result in a 10-minute ban.", variant: "destructive" });
+      toast({ 
+        title: "Message blocked", 
+        description: mod.reason || "Please be respectful in chat.", 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -134,7 +133,34 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
     };
     setChatMessages(prev => [...prev, newMessage]);
     setMessage("");
+    
+    // Auto scroll to bottom when user sends message
+    setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setMessage(prev => prev + emoji);
+    setIsEmojiPickerOpen(false);
+  };
+
+  const handleChatScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const isAtBottom = scrollHeight - scrollTop === clientHeight;
+    setIsScrolledUp(!isAtBottom);
+    
+    if (isAtBottom) {
+      setShowNewMessageIndicator(false);
+    }
+  };
+
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setShowNewMessageIndicator(false);
+    setIsScrolledUp(false);
+  };
+
   const handleLike = () => {
     setLikeCount(prev => prev + 1);
     
@@ -171,7 +197,7 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
     setIsFollowing(!isFollowing);
   };
 
-  // Simulate new chat messages
+  // Simulate new chat messages and handle scroll indicator
   useEffect(() => {
     const interval = setInterval(() => {
       const randomMessages = [
@@ -190,10 +216,15 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
       };
       
       setChatMessages(prev => [...prev, newMessage]);
+      
+      // Show new message indicator if scrolled up
+      if (isScrolledUp) {
+        setShowNewMessageIndicator(true);
+      }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isScrolledUp]);
 
   // Prune chat messages older than 2 minutes
   useEffect(() => {
@@ -286,10 +317,14 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
           </div>
         )}
 
-        {/* Chat Messages */}
-        <div className="absolute left-4 bottom-32 right-24 max-h-64 overflow-y-auto pr-2">
+        {/* Enhanced Chat Messages with Transparent Background */}
+        <div 
+          ref={chatContainerRef}
+          className="absolute left-4 bottom-32 right-24 max-h-64 overflow-y-auto scrollbar-hide"
+          onScroll={handleChatScroll}
+        >
           <AnimatePresence initial={false}>
-            <div className="space-y-1">
+            <div className="space-y-2">
               {chatMessages
                 .filter((m) => !m.isPinned)
                 .map((msg) => (
@@ -299,16 +334,30 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.25 }}
-                    className="chat-message max-w-xs"
+                    className="bg-black/40 backdrop-blur-sm rounded-full px-3 py-2 max-w-xs"
                   >
                     <span className={`font-bold text-sm ${msg.isStreamer ? 'text-yellow-400' : msg.isModerator ? 'text-green-400' : 'text-blue-400'}`}>
                       {msg.username}:
                     </span>
-                    <span className="ml-2 text-white">{msg.message}</span>
+                    <span className="ml-2 text-white text-sm">{msg.message}</span>
                   </motion.div>
                 ))}
+              <div ref={chatEndRef} />
             </div>
           </AnimatePresence>
+          
+          {/* New Message Indicator */}
+          {showNewMessageIndicator && (
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={scrollToBottom}
+              className="sticky bottom-0 left-1/2 transform -translate-x-1/2 bg-primary text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 hover:bg-primary/90 transition-colors"
+            >
+              New Messages
+              <ChevronDown className="w-3 h-3" />
+            </motion.button>
+          )}
         </div>
 
         {/* Floating Hearts */}
@@ -467,37 +516,66 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => setIsReportOpen(true)}
             className="w-12 h-12 rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm"
           >
             <Flag className="w-5 h-5" />
           </Button>
         </div>
 
-        {/* Chat Input */}
+        {/* Enhanced Chat Input with Emoji Picker */}
         <div className="absolute bottom-4 left-4 right-4">
           <div className="flex gap-2">
-            <div className="flex-1 flex bg-chat-background rounded-full backdrop-blur-sm border border-white/20">
+            <div className="flex-1 flex bg-black/40 backdrop-blur-sm rounded-full border border-white/20 relative">
               <Input
-                placeholder="Send a message..."
+                placeholder={moderationState.isBanned ? "You are temporarily banned" : "Send a message..."}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                className="border-0 bg-transparent text-white placeholder:text-white/60 rounded-full"
+                disabled={moderationState.isBanned}
+                className="bg-transparent border-0 text-white placeholder:text-white/70 px-4 py-3 rounded-l-full focus:ring-0 pr-12"
               />
               <Button
                 variant="ghost"
                 size="icon"
+                onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                className="absolute right-10 top-1/2 transform -translate-y-1/2 text-white hover:bg-white/20 rounded-full w-8 h-8"
+              >
+                <Smile className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handleSendMessage}
-                disabled={!message.trim()}
-                className="text-white hover:bg-white/20 rounded-full"
+                disabled={!message.trim() || moderationState.isBanned}
+                className="text-white hover:bg-white/20 rounded-r-full"
               >
                 <Send className="w-5 h-5" />
               </Button>
+              
+              {/* Emoji Picker */}
+              <EmojiPicker
+                isOpen={isEmojiPickerOpen}
+                onEmojiSelect={handleEmojiSelect}
+                onClose={() => setIsEmojiPickerOpen(false)}
+              />
             </div>
           </div>
         </div>
       </div>
-      <ViewerListModal isOpen={isViewerListOpen} onClose={() => setIsViewerListOpen(false)} viewers={viewers} />
+      
+      <ViewerListModal 
+        isOpen={isViewerListOpen}
+        onClose={() => setIsViewerListOpen(false)}
+        viewers={viewers}
+      />
+      
+      <ReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        streamId={streamId}
+        streamerName={streamData.streamer}
+      />
     </div>
   );
 };

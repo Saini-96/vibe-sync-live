@@ -94,11 +94,34 @@ const HomeFeed = ({ onStreamSelect, onGoLive, onProfileClick, onNotificationClic
     },
   ];
 
-  const filteredStreams = liveStreams.filter(stream =>
-    stream.streamer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    stream.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    stream.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Enhanced filtering and sorting logic
+  const filteredAndSortedStreams = (() => {
+    let filtered = liveStreams.filter(stream =>
+      stream.streamer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      stream.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      stream.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Apply sorting based on active filter
+    switch (activeFilter) {
+      case "Popular 🏆":
+        return filtered.sort((a, b) => b.viewers - a.viewers);
+      case "Nearby 📍":
+        // For demo purposes, we'll simulate geolocation sorting
+        // In a real app, this would use actual geolocation API
+        return filtered.sort(() => Math.random() - 0.5);
+      case "New":
+        return filtered.sort(() => Math.random() - 0.5);
+      case "Music":
+        return filtered.filter(s => s.category === "Music");
+      case "Gaming":
+        return filtered.filter(s => s.category === "Gaming");
+      case "Chat":
+        return filtered.filter(s => s.category === "Chat");
+      default:
+        return filtered;
+    }
+  })();
 
   return (
     <div className="min-h-screen bg-background">
@@ -150,7 +173,7 @@ const HomeFeed = ({ onStreamSelect, onGoLive, onProfileClick, onNotificationClic
       {/* Live Streams Grid */}
       <div className="p-4">
         <div className="grid grid-cols-2 gap-4">
-          {filteredStreams.map((stream, index) => (
+          {filteredAndSortedStreams.map((stream, index) => (
             <motion.div
               key={stream.id}
               initial={{ opacity: 0, y: 20 }}

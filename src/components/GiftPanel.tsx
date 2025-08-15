@@ -9,6 +9,8 @@ interface GiftPanelProps {
   onClose: () => void;
   onGiftSent: (giftType: string) => void;
   onTopUp?: () => void;
+  coinBalance: number;
+  onCoinUpdate: (newBalance: number) => void;
 }
 
 
@@ -21,8 +23,7 @@ interface GiftItem {
   animation: string;
 }
 
-const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp }: GiftPanelProps) => {
-  const [coinBalance, setCoinBalance] = useState(1250);
+const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp, coinBalance, onCoinUpdate }: GiftPanelProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const gifts: GiftItem[] = [
@@ -54,8 +55,9 @@ const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp }: GiftPanelProps) => 
 
   const handleSendGift = (gift: GiftItem) => {
     if (coinBalance >= gift.cost) {
-      setCoinBalance(prev => prev - gift.cost);
+      onCoinUpdate(coinBalance - gift.cost);
       onGiftSent(gift.animation);
+      onClose(); // Close panel immediately after gift selection
       
       // Show success feedback
       // In a real app, this would also send to backend
@@ -91,7 +93,7 @@ const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp }: GiftPanelProps) => 
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 500 }}
-          className="w-full bg-card/70 backdrop-blur-lg border border-white/10 rounded-t-3xl max-h-[80vh] overflow-hidden"
+          className="w-full bg-card/80 backdrop-blur-xl border border-white/20 rounded-t-3xl h-[60vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -154,8 +156,8 @@ const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp }: GiftPanelProps) => 
           </div>
 
           {/* Gifts Grid */}
-          <div className="px-4 pb-6">
-            <div className="grid grid-cols-4 gap-3 max-h-64 overflow-y-auto">
+          <div className="px-4 pb-6 flex-1 overflow-hidden">
+            <div className="grid grid-cols-4 gap-3 h-full overflow-y-auto scrollbar-hide">
               {filteredGifts.map((gift, index) => (
                 <motion.div
                   key={gift.id}
