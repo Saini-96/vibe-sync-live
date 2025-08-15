@@ -3,15 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Search, 
-  Plus, 
+  Home, 
+  Video, 
   Eye, 
   Heart, 
   MessageCircle, 
   User, 
   Wallet, 
   Bell,
-  Filter
+  Filter,
+  Search
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -25,7 +26,7 @@ interface HomeFeedProps {
 }
 
 const HomeFeed = ({ onStreamSelect, onGoLive, onProfileClick, onNotificationClick, onWalletClick, onChatClick }: HomeFeedProps) => {
-  const [activeFilter, setActiveFilter] = useState("Popular");
+  const [activeFilter, setActiveFilter] = useState("Popular 🏆");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filters = ["Popular 🏆", "Nearby 📍", "New", "Music", "Gaming", "Chat"];
@@ -95,7 +96,8 @@ const HomeFeed = ({ onStreamSelect, onGoLive, onProfileClick, onNotificationClic
 
   const filteredStreams = liveStreams.filter(stream =>
     stream.streamer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    stream.title.toLowerCase().includes(searchQuery.toLowerCase())
+    stream.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    stream.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -207,8 +209,8 @@ const HomeFeed = ({ onStreamSelect, onGoLive, onProfileClick, onNotificationClic
       <div className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-lg border-t border-border">
         <div className="flex items-center justify-around py-2">
           <Button variant="ghost" size="icon" className="flex-col gap-1 h-auto py-2">
-            <Search className="w-5 h-5" />
-            <span className="text-xs">Discover</span>
+            <Home className="w-5 h-5" />
+            <span className="text-xs">Home</span>
           </Button>
           
           <Button 
@@ -227,7 +229,7 @@ const HomeFeed = ({ onStreamSelect, onGoLive, onProfileClick, onNotificationClic
             size="lg"
             className="rounded-full w-16 h-16 relative"
           >
-            <Plus className="w-6 h-6" />
+            <Video className="w-[30px] h-[30px]" />
           </Button>
 
           <Button 

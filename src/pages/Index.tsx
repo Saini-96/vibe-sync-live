@@ -115,6 +115,7 @@ const Index = () => {
           <UserProfile 
             onBack={() => setCurrentState('home')}
             isOwnProfile={true}
+            onLogout={() => setCurrentState('auth')}
           />
         );
         

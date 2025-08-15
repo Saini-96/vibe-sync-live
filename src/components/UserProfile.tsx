@@ -17,16 +17,20 @@ import {
   UserPlus
 } from "lucide-react";
 import { motion } from "framer-motion";
+import EditProfileDialog from "@/components/EditProfileDialog";
+import SettingsModal from "@/components/SettingsModal";
 
 interface UserProfileProps {
   onBack: () => void;
   isOwnProfile?: boolean;
+  onLogout?: () => void;
 }
 
-const UserProfile = ({ onBack, isOwnProfile = true }: UserProfileProps) => {
+const UserProfile = ({ onBack, isOwnProfile = true, onLogout }: UserProfileProps) => {
   const [isFollowing, setIsFollowing] = useState(false);
-
-  const profileData = {
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [profileData, setProfileData] = useState({
     username: "Alice_Sunshine",
     bio: "🎤 Singer & Performer | 🌟 Spreading joy through music | 💕 Thanks for watching!",
     profilePic: "👩‍🎤",
@@ -39,6 +43,20 @@ const UserProfile = ({ onBack, isOwnProfile = true }: UserProfileProps) => {
     badges: ["🏆", "🎵", "💎", "👑"],
     isVerified: true,
     isLive: false,
+  });
+
+  const handleEditProfile = (name: string, bio: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      username: name,
+      bio: bio
+    }));
+  };
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
   };
 
   const stats = [
@@ -96,7 +114,7 @@ const UserProfile = ({ onBack, isOwnProfile = true }: UserProfileProps) => {
           </h1>
           <div className="flex items-center gap-2">
             {isOwnProfile ? (
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)}>
                 <Settings className="w-6 h-6" />
               </Button>
             ) : (
@@ -150,7 +168,7 @@ const UserProfile = ({ onBack, isOwnProfile = true }: UserProfileProps) => {
           {/* Action Buttons */}
           {isOwnProfile ? (
             <div className="flex gap-3 mb-6">
-              <Button variant="outline" className="flex-1 rounded-full">
+              <Button variant="outline" className="flex-1 rounded-full" onClick={() => setShowEditDialog(true)}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Profile
               </Button>
@@ -286,6 +304,22 @@ const UserProfile = ({ onBack, isOwnProfile = true }: UserProfileProps) => {
           </div>
         </div>
       </div>
+
+      {/* Edit Profile Dialog */}
+      <EditProfileDialog
+        isOpen={showEditDialog}
+        onClose={() => setShowEditDialog(false)}
+        currentName={profileData.username}
+        currentBio={profileData.bio}
+        onSave={handleEditProfile}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        onLogout={handleLogout}
+      />
     </div>
   );
 };

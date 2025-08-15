@@ -138,9 +138,24 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
     return timestamp.toLocaleDateString();
   };
 
+  const [allMessages, setAllMessages] = useState<{ [key: string]: Message[] }>(messages);
+
   const handleSendMessage = () => {
     if (message.trim() && activeChat) {
-      // Add message logic here
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        senderId: "me",
+        content: message,
+        timestamp: new Date(),
+        type: 'text'
+      };
+      
+      setAllMessages(prev => ({
+        ...prev,
+        [activeChat]: [...(prev[activeChat] || []), newMessage]
+      }));
+      
+      // Clear unread count for active chat
       setMessage("");
     }
   };
@@ -288,7 +303,7 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {(messages[activeChat] || []).map((msg) => (
+                {(allMessages[activeChat] || []).map((msg) => (
                   <div
                     key={msg.id}
                     className={`flex ${msg.senderId === 'me' ? 'justify-end' : 'justify-start'}`}
