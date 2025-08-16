@@ -31,6 +31,8 @@ import { useMediaAccess } from "@/hooks/useMediaAccess";
 import { useBeautyFilter } from "@/hooks/useBeautyFilter";
 import { useModerationControls } from "@/hooks/useModerationControls";
 import { useAdvancedModeration } from "@/hooks/useAdvancedModeration";
+import { useNudityDetection } from "@/hooks/useNudityDetection";
+import { useGiftAnimations } from "@/hooks/useGiftAnimations";
 
 interface StreamerInterfaceProps {
   onEndStream: () => void;
@@ -79,6 +81,8 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
   const beautyFilter = useBeautyFilter();
   const moderation = useModerationControls();
   const { checkMessage, moderationState } = useAdvancedModeration();
+  const nudityDetection = useNudityDetection();
+  const giftAnimations = useGiftAnimations();
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
@@ -111,12 +115,46 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
 
   const handleGoLive = async () => {
     if (streamTitle.trim() && mediaAccess.hasPermission) {
+      // Initialize nudity detection
+      await nudityDetection.initializeDetector();
+      
       setIsLive(true);
       setViewerCount(1);
       startStreamTimers();
+      
+      // Start nudity monitoring
+      startNudityMonitoring();
     } else if (!mediaAccess.hasPermission) {
       await mediaAccess.requestPermissions();
     }
+  };
+
+  const startNudityMonitoring = () => {
+    const monitorInterval = setInterval(async () => {
+      if (videoRef.current && mediaAccess.stream && mediaAccess.isCameraOn) {
+        const result = await nudityDetection.checkVideoFrame(videoRef.current);
+        
+        if (result.isNudityDetected) {
+          if (result.warnings >= 3) {
+            toast({
+              title: "Stream Blocked",
+              description: "Your stream has been blocked due to inappropriate content. Please review our community guidelines.",
+              variant: "destructive"
+            });
+            handleEndStream();
+          } else {
+            toast({
+              title: `Content Warning ${result.warnings}/3`,
+              description: "Please ensure your content follows our community guidelines. Your stream will be blocked after 3 warnings.",
+              variant: "destructive"
+            });
+          }
+        }
+      }
+    }, 5000); // Check every 5 seconds
+
+    // Store interval for cleanup
+    (window as any).nudityMonitorInterval = monitorInterval;
   };
 
   const startStreamTimers = () => {
@@ -171,6 +209,11 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
       Object.values((window as any).streamIntervals).forEach((interval: any) => {
         clearInterval(interval);
       });
+    }
+    
+    // Clear nudity monitoring
+    if ((window as any).nudityMonitorInterval) {
+      clearInterval((window as any).nudityMonitorInterval);
     }
     
     // Stop media stream
@@ -377,14 +420,14 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
               >
                 <RotateCcw className="w-5 h-5" />
               </Button>
-              <Button
-                variant={mediaAccess.isBeautyFilterOn ? "default" : "ghost"}
-                size="icon"
-                onClick={mediaAccess.toggleBeautyFilter}
-                className="rounded-full bg-black/40 text-white hover:bg-black/60"
-              >
-                <Filter className="w-5 h-5" />
-              </Button>
+                <Button
+                  variant={mediaAccess.isBeautyFilterOn ? "default" : "ghost"}
+                  size="icon"
+                  onClick={mediaAccess.toggleBeautyFilter}
+                  className="rounded-full bg-black/40 text-white hover:bg-black/60"
+                >
+                  <div className="text-yellow-400">✨</div>
+                </Button>
             </div>
           )}
         </div>
@@ -439,14 +482,24 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
     <div className="min-h-screen bg-background relative">
       {/* Live Video Area */}
       <div className="relative h-screen bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 flex items-center justify-center">
-        {/* Video Preview */}
-        <motion.div
-          className="w-full h-full flex items-center justify-center text-8xl"
-          animate={{ scale: [1, 1.02, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          🎤
-        </motion.div>
+        {/* Real-time Video Display */}
+        {mediaAccess.stream && mediaAccess.isCameraOn ? (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <motion.div
+            className="w-full h-full flex items-center justify-center text-8xl"
+            animate={{ scale: [1, 1.02, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            {mediaAccess.isCameraOn ? "🎤" : "📷"}
+          </motion.div>
+        )}
 
         {/* Top HUD */}
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between">

@@ -22,6 +22,7 @@ import ReportModal from "@/components/ReportModal";
 import EmojiPicker from "@/components/EmojiPicker";
 import { toast } from "@/hooks/use-toast";
 import { useAdvancedModeration } from "@/hooks/useAdvancedModeration";
+import { useGiftAnimations } from "@/hooks/useGiftAnimations";
 
 interface LiveStreamViewerProps {
   streamId: string;
@@ -69,6 +70,7 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
   const [isScrolledUp, setIsScrolledUp] = useState(false);
   const [showNewMessageIndicator, setShowNewMessageIndicator] = useState(false);
   const { checkMessage, moderationState } = useAdvancedModeration();
+  const giftAnimations = useGiftAnimations();
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -334,12 +336,47 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.25 }}
-                    className="bg-black/40 backdrop-blur-sm rounded-full px-3 py-2 max-w-xs"
+                    className="group relative"
                   >
-                    <span className={`font-bold text-sm ${msg.isStreamer ? 'text-yellow-400' : msg.isModerator ? 'text-green-400' : 'text-blue-400'}`}>
-                      {msg.username}:
-                    </span>
-                    <span className="ml-2 text-white text-sm">{msg.message}</span>
+                    <div className="bg-black/40 backdrop-blur-sm rounded-full px-3 py-2 max-w-xs">
+                      <span className={`font-bold text-sm ${
+                        msg.isStreamer ? 'text-yellow-400' : 
+                        msg.isModerator ? 'text-green-400' : 
+                        'text-blue-400'
+                      }`}>
+                        {msg.isModerator && !msg.isStreamer && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="mr-1"
+                          >
+                            🛡️
+                          </motion.span>
+                        )}
+                        {msg.username}:
+                      </span>
+                      <span className="ml-2 text-white text-sm">{msg.message}</span>
+                      
+                      {/* Moderation Controls - Only visible to streamers/moderators */}
+                      {!msg.isStreamer && (
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                          <button
+                            onClick={() => console.log('Mute user')}
+                            className="text-xs text-orange-400 hover:text-orange-300 p-1"
+                            title="Mute user"
+                          >
+                            🔇
+                          </button>
+                          <button
+                            onClick={() => console.log('Ban user')}
+                            className="text-xs text-red-400 hover:text-red-300 p-1"
+                            title="Ban user"
+                          >
+                            🚫
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </motion.div>
                 ))}
               <div ref={chatEndRef} />
@@ -359,6 +396,22 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
             </motion.button>
           )}
         </div>
+
+        {/* Gift Acknowledgment Message */}
+        {giftAnimations.acknowledgmentMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-32 left-4 right-4 z-20"
+          >
+            <div className="bg-gradient-to-r from-purple-500/80 to-pink-500/80 backdrop-blur-sm rounded-xl p-3 text-center">
+              <span className="text-white font-bold text-sm">
+                {giftAnimations.acknowledgmentMessage}
+              </span>
+            </div>
+          </motion.div>
+        )}
 
         {/* Floating Hearts */}
         <AnimatePresence>
@@ -385,8 +438,9 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
           ))}
         </AnimatePresence>
 
+        {/* Enhanced Gift Animations */}
         <AnimatePresence>
-          {giftAnimation && (
+          {(giftAnimation || giftAnimations.currentAnimation) && (
             <motion.div
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -394,8 +448,8 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
               className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
             >
               <div className="text-center">
-                {/* Enhanced Gift Animations */}
-                {(giftAnimation === 'float') && (
+                {/* Enhanced Gift Animations with Sound */}
+                {(giftAnimation === 'float' || giftAnimations.currentAnimation?.giftName === 'Rose') && (
                   <motion.div
                     initial={{ y: 100, opacity: 0 }}
                     animate={{ y: -100, opacity: [0, 1, 1, 0] }}
@@ -406,7 +460,7 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                   </motion.div>
                 )}
                 
-                {(giftAnimation === 'explode') && (
+                {(giftAnimation === 'explode' || giftAnimations.currentAnimation?.giftName === 'Fireworks') && (
                   <>
                     <motion.div
                       initial={{ scale: 0 }}
@@ -416,18 +470,18 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                     >
                       🎆
                     </motion.div>
-                    {[...Array(8)].map((_, i) => (
+                    {[...Array(12)].map((_, i) => (
                       <motion.div
                         key={i}
                         initial={{ scale: 0, x: 0, y: 0 }}
                         animate={{ 
                           scale: 1, 
-                          x: (Math.cos(i * 45 * Math.PI / 180) * 200),
-                          y: (Math.sin(i * 45 * Math.PI / 180) * 200),
+                          x: (Math.cos(i * 30 * Math.PI / 180) * 250),
+                          y: (Math.sin(i * 30 * Math.PI / 180) * 250),
                           opacity: [1, 0]
                         }}
                         transition={{ duration: 2, delay: 0.5 }}
-                        className="absolute text-2xl"
+                        className="absolute text-3xl"
                       >
                         ✨
                       </motion.div>
@@ -435,7 +489,7 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                   </>
                 )}
                 
-                {(giftAnimation === 'royal') && (
+                {(giftAnimation === 'royal' || giftAnimations.currentAnimation?.giftName === 'Crown') && (
                   <motion.div
                     initial={{ y: -50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -449,19 +503,40 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                     >
                       👑
                     </motion.div>
-                    <div className="text-yellow-400 text-4xl font-black mb-2">CROWN!</div>
+                    <div className="text-yellow-400 text-4xl font-black mb-2">ROYAL CROWN!</div>
                     <div className="w-full h-2 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 animate-pulse" />
+                  </motion.div>
+                )}
+
+                {/* Diamond Animation */}
+                {giftAnimations.currentAnimation?.giftName === 'Diamond' && (
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="text-center"
+                  >
+                    <motion.div
+                      animate={{ rotate: 360, scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: 2 }}
+                      className="text-8xl mb-4"
+                    >
+                      💎
+                    </motion.div>
+                    <div className="text-blue-400 text-3xl font-black">DIAMOND!</div>
                   </motion.div>
                 )}
                 
                 {/* Default animation for other gift types */}
-                {!['float', 'explode', 'royal'].includes(giftAnimation || '') && giftAnimation && (
+                {!['float', 'explode', 'royal'].includes(giftAnimation || '') && 
+                 !['Rose', 'Fireworks', 'Crown', 'Diamond'].includes(giftAnimations.currentAnimation?.giftName || '') && 
+                 (giftAnimation || giftAnimations.currentAnimation) && (
                   <motion.div
                     className="text-6xl mb-4"
                     animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.2, 1] }}
                     transition={{ duration: 0.5, repeat: 3 }}
                   >
-                    🎁
+                    {giftAnimations.currentAnimation?.giftEmoji || '🎁'}
                   </motion.div>
                 )}
                 
@@ -471,7 +546,10 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
                 >
-                  Gift Received!
+                  {giftAnimations.currentAnimation ? 
+                    `${giftAnimations.currentAnimation.giftName} Received!` : 
+                    'Gift Received!'
+                  }
                 </motion.p>
               </div>
             </motion.div>
