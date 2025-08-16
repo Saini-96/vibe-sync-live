@@ -34,7 +34,7 @@ export const useNudityDetection = () => {
   }, []);
 
   const checkVideoFrame = useCallback(async (videoElement: HTMLVideoElement): Promise<NudityDetectionResult> => {
-    if (!detectorRef.current || !videoElement || blocked || isChecking) {
+    if (!detectorRef.current || !videoElement || blocked) {
       return { isNudityDetected: false, confidence: 0, warnings, blocked };
     }
 
@@ -50,67 +50,50 @@ export const useNudityDetection = () => {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Could not get canvas context');
 
-      // Ensure video is ready
-      if (videoElement.readyState < 2 || videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
+      // Set canvas size to match video
+      canvas.width = videoElement.videoWidth || 640;
+      canvas.height = videoElement.videoHeight || 480;
+
+      // Skip if video dimensions are invalid
+      if (canvas.width === 0 || canvas.height === 0) {
         return { isNudityDetected: false, confidence: 0, warnings, blocked };
       }
-
-      // Set canvas size to match video
-      canvas.width = videoElement.videoWidth;
-      canvas.height = videoElement.videoHeight;
 
       // Draw current video frame
       ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
-      // Convert to blob for processing with better quality
-      const imageData = canvas.toDataURL('image/jpeg', 0.9);
+      // Convert to blob for processing
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
 
-      // Run detection with timeout
-      const result = await Promise.race([
-        detectorRef.current(imageData),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Detection timeout')), 5000)
-        )
-      ]);
+      // Run detection
+      const result = await detectorRef.current(imageData);
       
-      // Check for NSFW content with more comprehensive detection
+      // Check for NSFW content
       const nsfwResult = result.find((r: any) => 
         r.label.toLowerCase().includes('nsfw') || 
         r.label.toLowerCase().includes('porn') ||
         r.label.toLowerCase().includes('explicit') ||
-        r.label.toLowerCase().includes('nude') ||
-        r.label.toLowerCase().includes('sexual')
+        r.label.toLowerCase().includes('nude')
       );
 
-      const isNudityDetected = nsfwResult && nsfwResult.score > 0.7; // Higher threshold for accuracy
+      const isNudityDetected = nsfwResult && nsfwResult.score > 0.6; // 60% confidence threshold
       const confidence = nsfwResult ? nsfwResult.score : 0;
 
-      console.log('Nudity Detection Result:', { 
-        isNudityDetected, 
-        confidence: Math.round(confidence * 100), 
-        warnings: warnings + (isNudityDetected ? 1 : 0),
-        label: nsfwResult?.label 
-      });
-
-      let newWarnings = warnings;
-      let isBlocked = blocked;
-
       if (isNudityDetected) {
-        newWarnings = warnings + 1;
+        const newWarnings = warnings + 1;
         setWarnings(newWarnings);
         
         // Block after 3 warnings
         if (newWarnings >= 3) {
           setBlocked(true);
-          isBlocked = true;
         }
       }
 
       return {
         isNudityDetected,
         confidence,
-        warnings: newWarnings,
-        blocked: isBlocked
+        warnings: isNudityDetected ? warnings + 1 : warnings,
+        blocked: isNudityDetected && warnings >= 2 // Will be blocked on 3rd warning
       };
 
     } catch (error) {
@@ -119,7 +102,7 @@ export const useNudityDetection = () => {
     } finally {
       setIsChecking(false);
     }
-  }, [warnings, blocked, isChecking]);
+  }, [warnings, blocked]);
 
   const resetWarnings = useCallback(() => {
     setWarnings(0);

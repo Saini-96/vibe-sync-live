@@ -20,7 +20,7 @@ export interface BeautyFilterSettings {
 export const useEnhancedBeautyFilter = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<string>('none');
+  const [selectedPreset, setSelectedPreset] = useState<string>('natural');
   
   const presets: BeautyFilterPreset[] = [
     {
@@ -110,20 +110,16 @@ export const useEnhancedBeautyFilter = () => {
   ];
 
   const getCurrentSettings = useCallback(() => {
-    if (selectedPreset === 'none') return null;
     const preset = presets.find(p => p.id === selectedPreset);
     return preset?.settings || presets[0].settings;
   }, [selectedPreset]);
 
-  const applyBeautyFilter = useCallback((videoElement: HTMLVideoElement, outputCanvas?: HTMLCanvasElement): HTMLCanvasElement | null => {
-    let canvas = outputCanvas;
-    if (!canvas) {
-      if (!canvasRef.current) {
-        canvasRef.current = document.createElement('canvas');
-      }
-      canvas = canvasRef.current;
+  const applyBeautyFilter = useCallback((videoElement: HTMLVideoElement): HTMLCanvasElement | null => {
+    if (!canvasRef.current) {
+      canvasRef.current = document.createElement('canvas');
     }
 
+    const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
@@ -137,14 +133,8 @@ export const useEnhancedBeautyFilter = () => {
       ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
       const settings = getCurrentSettings();
-      
-      // If no filter selected, just return original
-      if (!settings) {
-        setIsProcessing(false);
-        return canvas;
-      }
 
-      // Apply beauty filters in order with better performance
+      // Apply beauty filters in order
       if (settings.skinSmoothing > 0) {
         applySkinSmoothing(ctx, canvas, settings.skinSmoothing);
       }
@@ -181,18 +171,6 @@ export const useEnhancedBeautyFilter = () => {
       setIsProcessing(false);
     }
   }, [getCurrentSettings]);
-
-  const getFilteredVideoStream = useCallback((videoElement: HTMLVideoElement): MediaStream | null => {
-    try {
-      const canvas = applyBeautyFilter(videoElement);
-      if (!canvas) return null;
-      
-      return canvas.captureStream(30); // 30 FPS
-    } catch (error) {
-      console.error('Error creating filtered stream:', error);
-      return null;
-    }
-  }, [applyBeautyFilter]);
 
   const applySkinSmoothing = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, intensity: number) => {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -360,7 +338,6 @@ export const useEnhancedBeautyFilter = () => {
     selectedPreset,
     setSelectedPreset,
     applyBeautyFilter,
-    getFilteredVideoStream,
     getCurrentSettings,
     isProcessing
   };

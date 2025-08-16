@@ -27,14 +27,14 @@ const Index = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [giftAnimation, setGiftAnimation] = useState<any>(null);
+  const [giftAnimation, setGiftAnimation] = useState<string | null>(null);
   const [coinBalance, setCoinBalance] = useState(1250);
 
-  const handleGiftSent = (giftData: any) => {
+  const handleGiftSent = (giftType: string) => {
     setShowGiftPanel(false);
-    setGiftAnimation(giftData);
-    setTimeout(() => setGiftAnimation(null), 8000);
-    console.log("Gift sent:", giftData);
+    setGiftAnimation(giftType);
+    setTimeout(() => setGiftAnimation(null), 3000);
+    console.log("Gift sent:", giftType);
   };
 
   const renderCurrentScreen = () => {

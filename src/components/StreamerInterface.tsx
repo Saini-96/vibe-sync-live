@@ -33,7 +33,6 @@ import { useModerationControls } from "@/hooks/useModerationControls";
 import { useAdvancedModeration } from "@/hooks/useAdvancedModeration";
 import { useNudityDetection } from "@/hooks/useNudityDetection";
 import { useGiftAnimations } from "@/hooks/useGiftAnimations";
-import GiftAnimationOverlay from "@/components/GiftAnimationOverlay";
 
 interface StreamerInterfaceProps {
   onEndStream: () => void;
@@ -78,8 +77,6 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const filteredVideoRef = useRef<HTMLVideoElement>(null);
-  const animationFrameRef = useRef<number>();
   
   const mediaAccess = useMediaAccess();
   const beautyFilter = useEnhancedBeautyFilter();
@@ -135,34 +132,27 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
 
   const startNudityMonitoring = () => {
     const monitorInterval = setInterval(async () => {
-      if (videoRef.current && mediaAccess.stream && mediaAccess.isCameraOn && isLive) {
-        try {
-          const result = await nudityDetection.checkVideoFrame(videoRef.current);
-          
-          if (result.isNudityDetected) {
-            console.log(`Nudity detected - Warning ${result.warnings}/3, Confidence: ${result.confidence}`);
-            
-            if (result.blocked || result.warnings >= 3) {
-              toast({
-                title: "🚨 Stream Automatically Ended",
-                description: "Your stream has been terminated due to inappropriate content violations. Please review our community guidelines before streaming again.",
-                variant: "destructive"
-              });
-              handleEndStream();
-              return;
-            } else {
-              toast({
-                title: `⚠️ Content Warning ${result.warnings}/3`,
-                description: `Inappropriate content detected (${Math.round(result.confidence * 100)}% confidence). Please adjust your content immediately or your stream will be terminated.`,
-                variant: "destructive"
-              });
-            }
+      if (videoRef.current && mediaAccess.stream && mediaAccess.isCameraOn) {
+        const result = await nudityDetection.checkVideoFrame(videoRef.current);
+        
+        if (result.isNudityDetected) {
+          if (result.warnings >= 3) {
+            toast({
+              title: "Stream Blocked",
+              description: "Your stream has been blocked due to inappropriate content. Please review our community guidelines.",
+              variant: "destructive"
+            });
+            handleEndStream();
+          } else {
+            toast({
+              title: `Content Warning ${result.warnings}/3`,
+              description: "Please ensure your content follows our community guidelines. Your stream will be blocked after 3 warnings.",
+              variant: "destructive"
+            });
           }
-        } catch (error) {
-          console.error('Nudity detection error:', error);
         }
       }
-    }, 2000); // Check every 2 seconds for better real-time detection
+    }, 5000); // Check every 5 seconds
 
     // Store interval for cleanup
     (window as any).nudityMonitorInterval = monitorInterval;
@@ -431,14 +421,14 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
               >
                 <RotateCcw className="w-5 h-5" />
               </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowBeautyFilters(!showBeautyFilters)}
-                    className="rounded-full bg-black/40 text-white hover:bg-black/60"
-                  >
-                    <div className="text-yellow-400 text-lg">✨</div>
-                  </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowBeautyFilters(!showBeautyFilters)}
+                  className="rounded-full bg-black/40 text-white hover:bg-black/60"
+                >
+                  <div className="text-yellow-400">✨</div>
+                </Button>
             </div>
           )}
           
@@ -458,15 +448,6 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
               </div>
               
               <div className="grid grid-cols-3 gap-3">
-                <Button
-                  key="none"
-                  variant={beautyFilter.selectedPreset === 'none' ? "default" : "outline"}
-                  onClick={() => beautyFilter.setSelectedPreset('none')}
-                  className="flex flex-col items-center p-3 h-auto"
-                >
-                  <span className="text-lg mb-1">❌</span>
-                  <span className="text-xs">None</span>
-                </Button>
                 {beautyFilter.presets.map((preset) => (
                   <Button
                     key={preset.id}
@@ -535,39 +516,16 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
       <div className="relative h-screen bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 flex items-center justify-center">
         {/* Real-time Video Display with Beauty Filter */}
         {mediaAccess.stream && mediaAccess.isCameraOn ? (
-          <>
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="hidden"
-            />
-            <canvas
-              ref={(canvas) => {
-                if (canvas && videoRef.current && beautyFilter.selectedPreset) {
-                  // Apply beauty filter continuously for live streaming
-                  const updateFrame = () => {
-                    if (videoRef.current && !videoRef.current.paused && !videoRef.current.ended && beautyFilter.selectedPreset !== 'none') {
-                      beautyFilter.applyBeautyFilter(videoRef.current, canvas);
-                      requestAnimationFrame(updateFrame);
-                    } else if (beautyFilter.selectedPreset === 'none') {
-                      // Show original video without filter
-                      const ctx = canvas.getContext('2d');
-                      if (ctx && videoRef.current) {
-                        canvas.width = videoRef.current.videoWidth || 640;
-                        canvas.height = videoRef.current.videoHeight || 480;
-                        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-                      }
-                      requestAnimationFrame(updateFrame);
-                    }
-                  };
-                  updateFrame();
-                }
-              }}
-              className="w-full h-full object-cover"
-            />
-          </>
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+            style={{
+              filter: beautyFilter.selectedPreset !== 'natural' ? 'blur(0.5px) brightness(1.1) contrast(1.1)' : 'none'
+            }}
+          />
         ) : (
           <motion.div
             className="w-full h-full flex items-center justify-center text-8xl"
@@ -707,6 +665,39 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
                         </span>
                         <span className="ml-2 text-white text-sm">{msg.message}</span>
                         
+                         {/* Moderation Controls - Only for non-streamer messages */}
+                        {!msg.isStreamer && (
+                          <div className="absolute -right-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-black/60 rounded-full p-1">
+                            <button
+                              onClick={() => handleModerationAction('mute', msg.id, msg.userId || '', msg.username)}
+                              className="text-xs text-orange-400 hover:text-orange-300 p-1 rounded-full hover:bg-white/20"
+                              title="Mute user"
+                            >
+                              <MicOff className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleModerationAction('ban', msg.id, msg.userId || '', msg.username)}
+                              className="text-xs text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-white/20"
+                              title="Ban user"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleModerationAction('pin', msg.id, msg.userId || '', msg.username)}
+                              className="text-xs text-yellow-400 hover:text-yellow-300 p-1 rounded-full hover:bg-white/20"
+                              title="Pin message"
+                            >
+                              <Pin className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleModerationAction('delete', msg.id, msg.userId || '', msg.username)}
+                              className="text-xs text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-white/20"
+                              title="Delete message"
+                            >
+                              <Shield className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   );
@@ -729,8 +720,46 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
           )}
         </div>
 
-        {/* Gift Animation Overlay */}
-        <GiftAnimationOverlay />
+        {/* Enhanced Gift Animations */}
+        <AnimatePresence>
+          {giftAnimations.currentAnimation && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0, x: 100 }}
+              animate={{ 
+                opacity: 1, 
+                scale: [0, 1.2, 1], 
+                x: 0,
+                rotate: [0, 360, 0]
+              }}
+              exit={{ opacity: 0, scale: 0, y: -100 }}
+              transition={{ 
+                duration: 2,
+                ease: "easeOut",
+                scale: { times: [0, 0.6, 1] }
+              }}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            >
+              <div className="text-8xl animate-bounce">
+                {giftAnimations.currentAnimation.giftEmoji}
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-pink-400/20 to-purple-400/20 animate-pulse rounded-full blur-xl" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Gift Acknowledgment Overlay */}
+        <AnimatePresence>
+          {giftAnimations.acknowledgmentMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              className="absolute bottom-40 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-sm rounded-full px-6 py-3 text-white text-center max-w-md"
+            >
+              <div className="font-bold text-lg">{giftAnimations.acknowledgmentMessage}</div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Camera Controls */}
         <div className="absolute right-4 bottom-32 flex flex-col gap-2">
@@ -741,6 +770,16 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
             className="w-12 h-12 rounded-full bg-white/20 text-white hover:bg-white/30"
           >
             <RotateCcw className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={mediaAccess.toggleBeautyFilter}
+            className={`w-12 h-12 rounded-full text-white hover:bg-white/30 ${
+              mediaAccess.isBeautyFilterOn ? 'bg-primary' : 'bg-white/20'
+            }`}
+          >
+            <Filter className="w-5 h-5" />
           </Button>
         </div>
 
