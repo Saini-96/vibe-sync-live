@@ -357,25 +357,7 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                       </span>
                       <span className="ml-2 text-white text-sm">{msg.message}</span>
                       
-                      {/* Moderation Controls - Only visible to streamers/moderators */}
-                      {!msg.isStreamer && (
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                          <button
-                            onClick={() => console.log('Mute user')}
-                            className="text-xs text-orange-400 hover:text-orange-300 p-1"
-                            title="Mute user"
-                          >
-                            🔇
-                          </button>
-                          <button
-                            onClick={() => console.log('Ban user')}
-                            className="text-xs text-red-400 hover:text-red-300 p-1"
-                            title="Ban user"
-                          >
-                            🚫
-                          </button>
-                        </div>
-                      )}
+                      {/* Removed moderation controls for audience view */}
                     </div>
                   </motion.div>
                 ))}

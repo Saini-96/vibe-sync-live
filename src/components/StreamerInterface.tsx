@@ -132,27 +132,32 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
 
   const startNudityMonitoring = () => {
     const monitorInterval = setInterval(async () => {
-      if (videoRef.current && mediaAccess.stream && mediaAccess.isCameraOn) {
-        const result = await nudityDetection.checkVideoFrame(videoRef.current);
-        
-        if (result.isNudityDetected) {
-          if (result.warnings >= 3) {
+      if (videoRef.current && mediaAccess.stream && mediaAccess.isCameraOn && nudityDetection.isInitialized) {
+        try {
+          const result = await nudityDetection.checkVideoFrame(videoRef.current);
+          
+          if (result.blocked) {
             toast({
-              title: "Stream Blocked",
-              description: "Your stream has been blocked due to inappropriate content. Please review our community guidelines.",
+              title: "⚠️ Stream Automatically Shut Down",
+              description: "Your stream has been terminated due to inappropriate content detection. This action is final.",
               variant: "destructive"
             });
             handleEndStream();
-          } else {
+            return;
+          }
+          
+          if (result.isNudityDetected) {
             toast({
-              title: `Content Warning ${result.warnings}/3`,
-              description: "Please ensure your content follows our community guidelines. Your stream will be blocked after 3 warnings.",
+              title: `🚨 Content Warning ${result.warnings}/3`,
+              description: `Inappropriate content detected (${(result.confidence * 100).toFixed(1)}% confidence). Your stream will be shut down after 3 warnings.`,
               variant: "destructive"
             });
           }
+        } catch (error) {
+          console.error('Nudity monitoring error:', error);
         }
       }
-    }, 5000); // Check every 5 seconds
+    }, 3000); // Check every 3 seconds for better responsiveness
 
     // Store interval for cleanup
     (window as any).nudityMonitorInterval = monitorInterval;
@@ -385,13 +390,21 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
         {/* Camera Preview */}
         <div className="flex-1 bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 flex items-center justify-center relative">
           {mediaAccess.hasPermission ? (
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-            />
+            <div className="relative w-full h-full">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              {/* Beauty Filter Preview Overlay */}
+              {beautyFilter.selectedPreset !== 'none' && beautyFilter.isProcessing && (
+                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm">
+                  Applying {beautyFilter.presets.find(p => p.id === beautyFilter.selectedPreset)?.name} filter...
+                </div>
+              )}
+            </div>
           ) : (
             <div className="text-center space-y-4">
               <div className="text-8xl">🎥</div>

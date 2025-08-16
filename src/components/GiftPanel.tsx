@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Coins, Gift } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "@/hooks/use-toast";
+import { useGiftAnimations } from "@/hooks/useGiftAnimations";
 
 interface GiftPanelProps {
   isOpen: boolean;
@@ -25,6 +27,7 @@ interface GiftItem {
 
 const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp, coinBalance, onCoinUpdate }: GiftPanelProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const giftAnimations = useGiftAnimations();
 
   const gifts: GiftItem[] = [
     { id: '1', name: 'Rose', emoji: '🌹', cost: 1, category: 'small', animation: 'float' },
@@ -55,15 +58,37 @@ const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp, coinBalance, onCoinUp
 
   const handleSendGift = (gift: GiftItem) => {
     if (coinBalance >= gift.cost) {
+      // Deduct coins
       onCoinUpdate(coinBalance - gift.cost);
+      
+      // Play gift animation and sound
+      giftAnimations.playGiftAnimation({
+        giftName: gift.name,
+        giftEmoji: gift.emoji,
+        senderUsername: "You",
+        streamerName: "Alice_Sunshine",
+        value: gift.cost
+      });
+      
+      // Trigger animation for viewer
       onGiftSent(gift.animation);
-      onClose(); // Close panel immediately after gift selection
       
       // Show success feedback
-      // In a real app, this would also send to backend
+      toast({
+        title: "Gift Sent! 🎁",
+        description: `You sent ${gift.emoji} ${gift.name} for ${gift.cost} coins!`,
+        variant: "default"
+      });
+      
+      // Close panel
+      onClose();
     } else {
-      // Show insufficient coins message
-      alert("Not enough coins! Top up to send this gift.");
+      // Show insufficient coins toast
+      toast({
+        title: "Not enough coins! 💰",
+        description: `You need ${gift.cost - coinBalance} more coins to send this gift.`,
+        variant: "destructive"
+      });
     }
   };
 
