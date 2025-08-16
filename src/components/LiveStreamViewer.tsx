@@ -357,22 +357,36 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                       </span>
                       <span className="ml-2 text-white text-sm">{msg.message}</span>
                       
-                      {/* Moderation Controls - Only visible to streamers/moderators */}
+                      {/* Moderation Controls - Only visible to assigned moderators */}
                       {!msg.isStreamer && (
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <div className="absolute -right-16 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-black/60 rounded-full p-1">
                           <button
-                            onClick={() => console.log('Mute user')}
-                            className="text-xs text-orange-400 hover:text-orange-300 p-1"
+                            onClick={() => console.log('Mute user:', msg.username)}
+                            className="text-xs text-orange-400 hover:text-orange-300 p-1 rounded-full hover:bg-white/20"
                             title="Mute user"
                           >
                             🔇
                           </button>
                           <button
-                            onClick={() => console.log('Ban user')}
-                            className="text-xs text-red-400 hover:text-red-300 p-1"
+                            onClick={() => console.log('Ban user:', msg.username)}
+                            className="text-xs text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-white/20"
                             title="Ban user"
                           >
                             🚫
+                          </button>
+                          <button
+                            onClick={() => console.log('Pin message:', msg.message)}
+                            className="text-xs text-yellow-400 hover:text-yellow-300 p-1 rounded-full hover:bg-white/20"
+                            title="Pin message"
+                          >
+                            📌
+                          </button>
+                          <button
+                            onClick={() => console.log('Delete message:', msg.id)}
+                            className="text-xs text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-white/20"
+                            title="Delete message"
+                          >
+                            🛡️
                           </button>
                         </div>
                       )}

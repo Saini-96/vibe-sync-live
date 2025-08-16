@@ -24,7 +24,7 @@ export const useGiftAnimations = () => {
     playGiftSound(options.value);
 
     // Clear animation after duration based on gift value
-    const animationDuration = options.value >= 500 ? 5000 : options.value >= 100 ? 4000 : 3000;
+    const animationDuration = options.value >= 500 ? 6000 : options.value >= 100 ? 4500 : 3500;
     setTimeout(() => {
       setCurrentAnimation(null);
     }, animationDuration);
@@ -32,7 +32,7 @@ export const useGiftAnimations = () => {
     // Clear acknowledgment message after duration
     setTimeout(() => {
       setAcknowledgmentMessage(null);
-    }, animationDuration + 1000);
+    }, animationDuration + 1500);
   }, []);
 
   const playGiftSound = (value: number) => {

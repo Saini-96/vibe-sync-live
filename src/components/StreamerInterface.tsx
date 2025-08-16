@@ -77,6 +77,8 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const filteredVideoRef = useRef<HTMLVideoElement>(null);
+  const animationFrameRef = useRef<number>();
   
   const mediaAccess = useMediaAccess();
   const beautyFilter = useEnhancedBeautyFilter();
@@ -132,27 +134,27 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
 
   const startNudityMonitoring = () => {
     const monitorInterval = setInterval(async () => {
-      if (videoRef.current && mediaAccess.stream && mediaAccess.isCameraOn) {
+      if (videoRef.current && mediaAccess.stream && mediaAccess.isCameraOn && videoRef.current.readyState >= 2) {
         const result = await nudityDetection.checkVideoFrame(videoRef.current);
         
         if (result.isNudityDetected) {
-          if (result.warnings >= 3) {
+          if (result.blocked || result.warnings >= 3) {
             toast({
-              title: "Stream Blocked",
-              description: "Your stream has been blocked due to inappropriate content. Please review our community guidelines.",
+              title: "Stream Automatically Ended",
+              description: "Your stream has been terminated due to inappropriate content violations. Please review our community guidelines before streaming again.",
               variant: "destructive"
             });
             handleEndStream();
           } else {
             toast({
-              title: `Content Warning ${result.warnings}/3`,
-              description: "Please ensure your content follows our community guidelines. Your stream will be blocked after 3 warnings.",
+              title: `⚠️ Content Warning ${result.warnings}/3`,
+              description: `Inappropriate content detected (${Math.round(result.confidence * 100)}% confidence). Please adjust your content immediately or your stream will be terminated.`,
               variant: "destructive"
             });
           }
         }
       }
-    }, 5000); // Check every 5 seconds
+    }, 3000); // Check every 3 seconds for more responsive detection
 
     // Store interval for cleanup
     (window as any).nudityMonitorInterval = monitorInterval;
@@ -421,14 +423,14 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
               >
                 <RotateCcw className="w-5 h-5" />
               </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowBeautyFilters(!showBeautyFilters)}
-                  className="rounded-full bg-black/40 text-white hover:bg-black/60"
-                >
-                  <div className="text-yellow-400">✨</div>
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowBeautyFilters(!showBeautyFilters)}
+                    className="rounded-full bg-black/40 text-white hover:bg-black/60"
+                  >
+                    <div className="text-yellow-400 text-lg">✨</div>
+                  </Button>
             </div>
           )}
           
@@ -516,16 +518,29 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
       <div className="relative h-screen bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 flex items-center justify-center">
         {/* Real-time Video Display with Beauty Filter */}
         {mediaAccess.stream && mediaAccess.isCameraOn ? (
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-            style={{
-              filter: beautyFilter.selectedPreset !== 'natural' ? 'blur(0.5px) brightness(1.1) contrast(1.1)' : 'none'
-            }}
-          />
+          <>
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className="hidden"
+            />
+            <canvas
+              ref={(canvas) => {
+                if (canvas && videoRef.current) {
+                  const updateFrame = () => {
+                    if (videoRef.current && !videoRef.current.paused && !videoRef.current.ended) {
+                      beautyFilter.applyBeautyFilter(videoRef.current, canvas);
+                    }
+                    animationFrameRef.current = requestAnimationFrame(updateFrame);
+                  };
+                  updateFrame();
+                }
+              }}
+              className="w-full h-full object-cover"
+            />
+          </>
         ) : (
           <motion.div
             className="w-full h-full flex items-center justify-center text-8xl"
@@ -724,25 +739,64 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
         <AnimatePresence>
           {giftAnimations.currentAnimation && (
             <motion.div
-              initial={{ opacity: 0, scale: 0, x: 100 }}
+              initial={{ opacity: 0, scale: 0, x: window.innerWidth }}
               animate={{ 
-                opacity: 1, 
-                scale: [0, 1.2, 1], 
-                x: 0,
-                rotate: [0, 360, 0]
+                opacity: [0, 1, 1, 1, 0], 
+                scale: [0, 1.5, 1.2, 1, 0.8], 
+                x: [window.innerWidth, 0, 0, 0, -window.innerWidth],
+                rotate: [0, 180, 360, 540, 720]
               }}
-              exit={{ opacity: 0, scale: 0, y: -100 }}
+              exit={{ opacity: 0, scale: 0, y: -200 }}
               transition={{ 
-                duration: 2,
-                ease: "easeOut",
-                scale: { times: [0, 0.6, 1] }
+                duration: giftAnimations.currentAnimation.value >= 500 ? 6 : giftAnimations.currentAnimation.value >= 100 ? 4.5 : 3.5,
+                ease: "easeInOut",
+                opacity: { times: [0, 0.2, 0.8, 0.9, 1] },
+                scale: { times: [0, 0.3, 0.5, 0.8, 1] },
+                x: { times: [0, 0.3, 0.7, 0.9, 1] }
               }}
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
             >
-              <div className="text-8xl animate-bounce">
-                {giftAnimations.currentAnimation.giftEmoji}
+              <div className="relative">
+                <div className="text-9xl animate-pulse filter drop-shadow-2xl">
+                  {giftAnimations.currentAnimation.giftEmoji}
+                </div>
+                
+                {/* Particle Effects */}
+                {giftAnimations.currentAnimation.value >= 100 && (
+                  <>
+                    {[...Array(12)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ scale: 0, x: 0, y: 0 }}
+                        animate={{ 
+                          scale: [0, 1, 0], 
+                          x: (Math.cos(i * 30 * Math.PI / 180) * 200),
+                          y: (Math.sin(i * 30 * Math.PI / 180) * 200),
+                          opacity: [0, 1, 0]
+                        }}
+                        transition={{ 
+                          duration: 2,
+                          delay: 1,
+                          ease: "easeOut"
+                        }}
+                        className="absolute text-4xl"
+                      >
+                        ✨
+                      </motion.div>
+                    ))}
+                  </>
+                )}
+                
+                {/* Glow Effect for Premium Gifts */}
+                {giftAnimations.currentAnimation.value >= 500 && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/40 via-pink-400/40 to-purple-400/40 animate-ping rounded-full blur-3xl scale-150" />
+                )}
+                
+                {/* Medium Gift Sparkles */}
+                {giftAnimations.currentAnimation.value >= 25 && giftAnimations.currentAnimation.value < 100 && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 via-green-400/30 to-yellow-400/30 animate-pulse rounded-full blur-2xl scale-125" />
+                )}
               </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-pink-400/20 to-purple-400/20 animate-pulse rounded-full blur-xl" />
             </motion.div>
           )}
         </AnimatePresence>
@@ -770,16 +824,6 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
             className="w-12 h-12 rounded-full bg-white/20 text-white hover:bg-white/30"
           >
             <RotateCcw className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={mediaAccess.toggleBeautyFilter}
-            className={`w-12 h-12 rounded-full text-white hover:bg-white/30 ${
-              mediaAccess.isBeautyFilterOn ? 'bg-primary' : 'bg-white/20'
-            }`}
-          >
-            <Filter className="w-5 h-5" />
           </Button>
         </div>
 

@@ -55,7 +55,7 @@ export const useNudityDetection = () => {
       canvas.height = videoElement.videoHeight || 480;
 
       // Skip if video dimensions are invalid
-      if (canvas.width === 0 || canvas.height === 0) {
+      if (canvas.width === 0 || canvas.height === 0 || videoElement.readyState < 2) {
         return { isNudityDetected: false, confidence: 0, warnings, blocked };
       }
 
@@ -76,8 +76,10 @@ export const useNudityDetection = () => {
         r.label.toLowerCase().includes('nude')
       );
 
-      const isNudityDetected = nsfwResult && nsfwResult.score > 0.6; // 60% confidence threshold
+      const isNudityDetected = nsfwResult && nsfwResult.score > 0.65; // Increased threshold for better accuracy
       const confidence = nsfwResult ? nsfwResult.score : 0;
+
+      console.log('Nudity Detection Result:', { isNudityDetected, confidence, warnings });
 
       if (isNudityDetected) {
         const newWarnings = warnings + 1;
