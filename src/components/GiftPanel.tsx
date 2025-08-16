@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface GiftPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  onGiftSent: (giftType: string) => void;
+  onGiftSent: (giftData: any) => void;
   onTopUp?: () => void;
   coinBalance: number;
   onCoinUpdate: (newBalance: number) => void;
@@ -56,7 +56,18 @@ const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp, coinBalance, onCoinUp
   const handleSendGift = (gift: GiftItem) => {
     if (coinBalance >= gift.cost) {
       onCoinUpdate(coinBalance - gift.cost);
-      onGiftSent(gift.animation);
+      
+      // Trigger gift animation with proper data
+      const giftData = {
+        giftName: gift.name,
+        giftEmoji: gift.emoji,
+        senderUsername: "You", // In real app, get from auth
+        streamerName: "Alice_Sunshine", // In real app, get from stream data
+        value: gift.cost,
+        animation: gift.animation
+      };
+      
+      onGiftSent(giftData);
       onClose(); // Close panel immediately after gift selection
       
       // Show success feedback

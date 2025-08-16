@@ -33,6 +33,7 @@ import { useModerationControls } from "@/hooks/useModerationControls";
 import { useAdvancedModeration } from "@/hooks/useAdvancedModeration";
 import { useNudityDetection } from "@/hooks/useNudityDetection";
 import { useGiftAnimations } from "@/hooks/useGiftAnimations";
+import GiftAnimationOverlay from "@/components/GiftAnimationOverlay";
 
 interface StreamerInterfaceProps {
   onEndStream: () => void;
@@ -735,85 +736,8 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
           )}
         </div>
 
-        {/* Enhanced Gift Animations */}
-        <AnimatePresence>
-          {giftAnimations.currentAnimation && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0, x: window.innerWidth }}
-              animate={{ 
-                opacity: [0, 1, 1, 1, 0], 
-                scale: [0, 1.5, 1.2, 1, 0.8], 
-                x: [window.innerWidth, 0, 0, 0, -window.innerWidth],
-                rotate: [0, 180, 360, 540, 720]
-              }}
-              exit={{ opacity: 0, scale: 0, y: -200 }}
-              transition={{ 
-                duration: giftAnimations.currentAnimation.value >= 500 ? 6 : giftAnimations.currentAnimation.value >= 100 ? 4.5 : 3.5,
-                ease: "easeInOut",
-                opacity: { times: [0, 0.2, 0.8, 0.9, 1] },
-                scale: { times: [0, 0.3, 0.5, 0.8, 1] },
-                x: { times: [0, 0.3, 0.7, 0.9, 1] }
-              }}
-              className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
-            >
-              <div className="relative">
-                <div className="text-9xl animate-pulse filter drop-shadow-2xl">
-                  {giftAnimations.currentAnimation.giftEmoji}
-                </div>
-                
-                {/* Particle Effects */}
-                {giftAnimations.currentAnimation.value >= 100 && (
-                  <>
-                    {[...Array(12)].map((_, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ scale: 0, x: 0, y: 0 }}
-                        animate={{ 
-                          scale: [0, 1, 0], 
-                          x: (Math.cos(i * 30 * Math.PI / 180) * 200),
-                          y: (Math.sin(i * 30 * Math.PI / 180) * 200),
-                          opacity: [0, 1, 0]
-                        }}
-                        transition={{ 
-                          duration: 2,
-                          delay: 1,
-                          ease: "easeOut"
-                        }}
-                        className="absolute text-4xl"
-                      >
-                        ✨
-                      </motion.div>
-                    ))}
-                  </>
-                )}
-                
-                {/* Glow Effect for Premium Gifts */}
-                {giftAnimations.currentAnimation.value >= 500 && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/40 via-pink-400/40 to-purple-400/40 animate-ping rounded-full blur-3xl scale-150" />
-                )}
-                
-                {/* Medium Gift Sparkles */}
-                {giftAnimations.currentAnimation.value >= 25 && giftAnimations.currentAnimation.value < 100 && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 via-green-400/30 to-yellow-400/30 animate-pulse rounded-full blur-2xl scale-125" />
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Gift Acknowledgment Overlay */}
-        <AnimatePresence>
-          {giftAnimations.acknowledgmentMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -50 }}
-              className="absolute bottom-40 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-sm rounded-full px-6 py-3 text-white text-center max-w-md"
-            >
-              <div className="font-bold text-lg">{giftAnimations.acknowledgmentMessage}</div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Gift Animation Overlay */}
+        <GiftAnimationOverlay />
 
         {/* Camera Controls */}
         <div className="absolute right-4 bottom-32 flex flex-col gap-2">

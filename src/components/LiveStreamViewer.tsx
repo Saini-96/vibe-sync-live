@@ -23,12 +23,13 @@ import EmojiPicker from "@/components/EmojiPicker";
 import { toast } from "@/hooks/use-toast";
 import { useAdvancedModeration } from "@/hooks/useAdvancedModeration";
 import { useGiftAnimations } from "@/hooks/useGiftAnimations";
+import GiftAnimationOverlay from "@/components/GiftAnimationOverlay";
 
 interface LiveStreamViewerProps {
   streamId: string;
   onBack: () => void;
   onGiftPanel: () => void;
-  giftAnimation?: string | null;
+  giftAnimation?: any;
   coinBalance: number;
   onCoinUpdate: (newBalance: number) => void;
 }
@@ -182,18 +183,22 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
     }, 3000);
   };
 
-  const handleGift = (giftType: string) => {
-    setGiftAnimation(giftType);
-    setTimeout(() => setGiftAnimation(null), 2000);
+  const handleGift = (giftData: any) => {
+    giftAnimations.playGiftAnimation({
+      giftName: giftData.giftName,
+      giftEmoji: giftData.giftEmoji,
+      senderUsername: giftData.senderUsername,
+      streamerName: giftData.streamerName,
+      value: giftData.value,
+      animation: giftData.animation
+    });
   };
 
   // Update gift animation when external prop changes
   useEffect(() => {
     if (!externalGiftAnimation) return;
-    setGiftAnimation(externalGiftAnimation);
-    const timeout = setTimeout(() => setGiftAnimation(null), 2500);
-    return () => clearTimeout(timeout);
-  }, [externalGiftAnimation]);
+    giftAnimations.playGiftAnimation(externalGiftAnimation);
+  }, [externalGiftAnimation, giftAnimations]);
 
   const handleFollow = () => {
     setIsFollowing(!isFollowing);
@@ -452,123 +457,8 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
           ))}
         </AnimatePresence>
 
-        {/* Enhanced Gift Animations */}
-        <AnimatePresence>
-          {(giftAnimation || giftAnimations.currentAnimation) && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0 }}
-              className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
-            >
-              <div className="text-center">
-                {/* Enhanced Gift Animations with Sound */}
-                {(giftAnimation === 'float' || giftAnimations.currentAnimation?.giftName === 'Rose') && (
-                  <motion.div
-                    initial={{ y: 100, opacity: 0 }}
-                    animate={{ y: -100, opacity: [0, 1, 1, 0] }}
-                    transition={{ duration: 3, ease: "easeOut" }}
-                    className="text-6xl"
-                  >
-                    🌹
-                  </motion.div>
-                )}
-                
-                {(giftAnimation === 'explode' || giftAnimations.currentAnimation?.giftName === 'Fireworks') && (
-                  <>
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: [0, 2, 1] }}
-                      transition={{ duration: 1 }}
-                      className="text-8xl mb-4"
-                    >
-                      🎆
-                    </motion.div>
-                    {[...Array(12)].map((_, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ scale: 0, x: 0, y: 0 }}
-                        animate={{ 
-                          scale: 1, 
-                          x: (Math.cos(i * 30 * Math.PI / 180) * 250),
-                          y: (Math.sin(i * 30 * Math.PI / 180) * 250),
-                          opacity: [1, 0]
-                        }}
-                        transition={{ duration: 2, delay: 0.5 }}
-                        className="absolute text-3xl"
-                      >
-                        ✨
-                      </motion.div>
-                    ))}
-                  </>
-                )}
-                
-                {(giftAnimation === 'royal' || giftAnimations.currentAnimation?.giftName === 'Crown') && (
-                  <motion.div
-                    initial={{ y: -50, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 1 }}
-                    className="text-center"
-                  >
-                    <motion.div
-                      animate={{ rotate: [0, 5, -5, 0] }}
-                      transition={{ duration: 0.5, repeat: 4 }}
-                      className="text-8xl mb-4"
-                    >
-                      👑
-                    </motion.div>
-                    <div className="text-yellow-400 text-4xl font-black mb-2">ROYAL CROWN!</div>
-                    <div className="w-full h-2 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 animate-pulse" />
-                  </motion.div>
-                )}
-
-                {/* Diamond Animation */}
-                {giftAnimations.currentAnimation?.giftName === 'Diamond' && (
-                  <motion.div
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ duration: 0.8 }}
-                    className="text-center"
-                  >
-                    <motion.div
-                      animate={{ rotate: 360, scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: 2 }}
-                      className="text-8xl mb-4"
-                    >
-                      💎
-                    </motion.div>
-                    <div className="text-blue-400 text-3xl font-black">DIAMOND!</div>
-                  </motion.div>
-                )}
-                
-                {/* Default animation for other gift types */}
-                {!['float', 'explode', 'royal'].includes(giftAnimation || '') && 
-                 !['Rose', 'Fireworks', 'Crown', 'Diamond'].includes(giftAnimations.currentAnimation?.giftName || '') && 
-                 (giftAnimation || giftAnimations.currentAnimation) && (
-                  <motion.div
-                    className="text-6xl mb-4"
-                    animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.2, 1] }}
-                    transition={{ duration: 0.5, repeat: 3 }}
-                  >
-                    {giftAnimations.currentAnimation?.giftEmoji || '🎁'}
-                  </motion.div>
-                )}
-                
-                <motion.p
-                  className="text-2xl font-black text-white bg-black/50 px-4 py-2 rounded-full"
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  {giftAnimations.currentAnimation ? 
-                    `${giftAnimations.currentAnimation.giftName} Received!` : 
-                    'Gift Received!'
-                  }
-                </motion.p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Gift Animation Overlay */}
+        <GiftAnimationOverlay />
 
         {/* Right Side Controls */}
         <div className="absolute right-4 bottom-32 flex flex-col gap-4">
