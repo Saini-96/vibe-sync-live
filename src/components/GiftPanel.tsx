@@ -157,7 +157,7 @@ const GiftPanel = ({ isOpen, onClose, onGiftSent, onTopUp, coinBalance, onCoinUp
 
           {/* Gifts Grid */}
           <div className="px-4 pb-6 flex-1 overflow-hidden">
-            <div className={`grid grid-cols-4 gap-3 h-full ${selectedCategory === 'all' ? 'overflow-y-auto' : ''} scrollbar-hide`}>
+            <div className="grid grid-cols-4 gap-3 h-full max-h-[280px] overflow-y-auto scrollbar-hide">
               {filteredGifts.map((gift, index) => (
                 <motion.div
                   key={gift.id}

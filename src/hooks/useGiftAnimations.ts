@@ -23,15 +23,16 @@ export const useGiftAnimations = () => {
     // Play sound effect based on gift value
     playGiftSound(options.value);
 
-    // Clear animation after duration
+    // Clear animation after duration based on gift value
+    const animationDuration = options.value >= 500 ? 5000 : options.value >= 100 ? 4000 : 3000;
     setTimeout(() => {
       setCurrentAnimation(null);
-    }, 3000);
+    }, animationDuration);
 
     // Clear acknowledgment message after duration
     setTimeout(() => {
       setAcknowledgmentMessage(null);
-    }, 5000);
+    }, animationDuration + 1000);
   }, []);
 
   const playGiftSound = (value: number) => {

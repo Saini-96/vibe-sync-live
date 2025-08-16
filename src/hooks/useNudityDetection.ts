@@ -54,6 +54,11 @@ export const useNudityDetection = () => {
       canvas.width = videoElement.videoWidth || 640;
       canvas.height = videoElement.videoHeight || 480;
 
+      // Skip if video dimensions are invalid
+      if (canvas.width === 0 || canvas.height === 0) {
+        return { isNudityDetected: false, confidence: 0, warnings, blocked };
+      }
+
       // Draw current video frame
       ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
@@ -67,10 +72,11 @@ export const useNudityDetection = () => {
       const nsfwResult = result.find((r: any) => 
         r.label.toLowerCase().includes('nsfw') || 
         r.label.toLowerCase().includes('porn') ||
-        r.label.toLowerCase().includes('explicit')
+        r.label.toLowerCase().includes('explicit') ||
+        r.label.toLowerCase().includes('nude')
       );
 
-      const isNudityDetected = nsfwResult && nsfwResult.score > 0.7; // 70% confidence threshold
+      const isNudityDetected = nsfwResult && nsfwResult.score > 0.6; // 60% confidence threshold
       const confidence = nsfwResult ? nsfwResult.score : 0;
 
       if (isNudityDetected) {

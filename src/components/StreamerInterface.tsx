@@ -28,7 +28,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ViewerListModal, { Viewer } from "@/components/ViewerListModal";
 import EmojiPicker from "@/components/EmojiPicker";
 import { useMediaAccess } from "@/hooks/useMediaAccess";
-import { useBeautyFilter } from "@/hooks/useBeautyFilter";
+import { useEnhancedBeautyFilter } from "@/hooks/useEnhancedBeautyFilter";
 import { useModerationControls } from "@/hooks/useModerationControls";
 import { useAdvancedModeration } from "@/hooks/useAdvancedModeration";
 import { useNudityDetection } from "@/hooks/useNudityDetection";
@@ -72,13 +72,14 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isScrolledUp, setIsScrolledUp] = useState(false);
   const [showNewMessageIndicator, setShowNewMessageIndicator] = useState(false);
+  const [showBeautyFilters, setShowBeautyFilters] = useState(false);
   
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   const mediaAccess = useMediaAccess();
-  const beautyFilter = useBeautyFilter();
+  const beautyFilter = useEnhancedBeautyFilter();
   const moderation = useModerationControls();
   const { checkMessage, moderationState } = useAdvancedModeration();
   const nudityDetection = useNudityDetection();
@@ -421,13 +422,44 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
                 <RotateCcw className="w-5 h-5" />
               </Button>
                 <Button
-                  variant={mediaAccess.isBeautyFilterOn ? "default" : "ghost"}
+                  variant="ghost"
                   size="icon"
-                  onClick={mediaAccess.toggleBeautyFilter}
+                  onClick={() => setShowBeautyFilters(!showBeautyFilters)}
                   className="rounded-full bg-black/40 text-white hover:bg-black/60"
                 >
                   <div className="text-yellow-400">✨</div>
                 </Button>
+            </div>
+          )}
+          
+          {/* Beauty Filter Selection Panel */}
+          {showBeautyFilters && mediaAccess.hasPermission && (
+            <div className="absolute bottom-4 left-4 right-4 bg-black/80 backdrop-blur-lg rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-bold">Beauty Filters</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowBeautyFilters(false)}
+                  className="text-white hover:bg-white/20"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-3">
+                {beautyFilter.presets.map((preset) => (
+                  <Button
+                    key={preset.id}
+                    variant={beautyFilter.selectedPreset === preset.id ? "default" : "outline"}
+                    onClick={() => beautyFilter.setSelectedPreset(preset.id)}
+                    className="flex flex-col items-center p-3 h-auto"
+                  >
+                    <span className="text-lg mb-1">{preset.emoji}</span>
+                    <span className="text-xs">{preset.name}</span>
+                  </Button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -482,7 +514,7 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
     <div className="min-h-screen bg-background relative">
       {/* Live Video Area */}
       <div className="relative h-screen bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 flex items-center justify-center">
-        {/* Real-time Video Display */}
+        {/* Real-time Video Display with Beauty Filter */}
         {mediaAccess.stream && mediaAccess.isCameraOn ? (
           <video
             ref={videoRef}
@@ -490,6 +522,9 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
             muted
             playsInline
             className="w-full h-full object-cover"
+            style={{
+              filter: beautyFilter.selectedPreset !== 'natural' ? 'blur(0.5px) brightness(1.1) contrast(1.1)' : 'none'
+            }}
           />
         ) : (
           <motion.div
@@ -630,18 +665,34 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
                         </span>
                         <span className="ml-2 text-white text-sm">{msg.message}</span>
                         
-                        {/* Moderation Controls - Only for non-streamer messages */}
+                         {/* Moderation Controls - Only for non-streamer messages */}
                         {!msg.isStreamer && (
-                          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                          <div className="absolute -right-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-black/60 rounded-full p-1">
+                            <button
+                              onClick={() => handleModerationAction('mute', msg.id, msg.userId || '', msg.username)}
+                              className="text-xs text-orange-400 hover:text-orange-300 p-1 rounded-full hover:bg-white/20"
+                              title="Mute user"
+                            >
+                              <MicOff className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleModerationAction('ban', msg.id, msg.userId || '', msg.username)}
+                              className="text-xs text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-white/20"
+                              title="Ban user"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
                             <button
                               onClick={() => handleModerationAction('pin', msg.id, msg.userId || '', msg.username)}
-                              className="text-xs text-yellow-400 hover:text-yellow-300 p-1"
+                              className="text-xs text-yellow-400 hover:text-yellow-300 p-1 rounded-full hover:bg-white/20"
+                              title="Pin message"
                             >
                               <Pin className="w-3 h-3" />
                             </button>
                             <button
                               onClick={() => handleModerationAction('delete', msg.id, msg.userId || '', msg.username)}
-                              className="text-xs text-red-400 hover:text-red-300 p-1"
+                              className="text-xs text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-white/20"
+                              title="Delete message"
                             >
                               <Shield className="w-3 h-3" />
                             </button>
@@ -669,18 +720,46 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
           )}
         </div>
 
-        {/* Gift Notifications */}
-        <div className="absolute right-4 top-32 space-y-2">
-          <motion.div
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-gift rounded-xl p-3 text-white text-center max-w-32"
-          >
-            <Gift className="w-6 h-6 mx-auto mb-1" />
-            <div className="text-xs font-bold">Gift Received!</div>
-            <div className="text-xs">+50 coins</div>
-          </motion.div>
-        </div>
+        {/* Enhanced Gift Animations */}
+        <AnimatePresence>
+          {giftAnimations.currentAnimation && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0, x: 100 }}
+              animate={{ 
+                opacity: 1, 
+                scale: [0, 1.2, 1], 
+                x: 0,
+                rotate: [0, 360, 0]
+              }}
+              exit={{ opacity: 0, scale: 0, y: -100 }}
+              transition={{ 
+                duration: 2,
+                ease: "easeOut",
+                scale: { times: [0, 0.6, 1] }
+              }}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            >
+              <div className="text-8xl animate-bounce">
+                {giftAnimations.currentAnimation.giftEmoji}
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-pink-400/20 to-purple-400/20 animate-pulse rounded-full blur-xl" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Gift Acknowledgment Overlay */}
+        <AnimatePresence>
+          {giftAnimations.acknowledgmentMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              className="absolute bottom-40 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-sm rounded-full px-6 py-3 text-white text-center max-w-md"
+            >
+              <div className="font-bold text-lg">{giftAnimations.acknowledgmentMessage}</div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Camera Controls */}
         <div className="absolute right-4 bottom-32 flex flex-col gap-2">
@@ -772,9 +851,31 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
               className="bg-card rounded-2xl p-6 max-w-sm w-full"
             >
               <h3 className="text-xl font-bold text-foreground mb-2">End Live Stream?</h3>
-              <p className="text-muted-foreground mb-6">
+              <p className="text-muted-foreground mb-4">
                 Are you sure you want to end your stream? Your viewers will be notified.
               </p>
+              
+              {/* Stream Summary Preview */}
+              <div className="bg-muted/50 rounded-xl p-4 mb-6">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="text-center">
+                    <div className="font-bold text-primary">{formatDuration(streamDuration)}</div>
+                    <div className="text-xs text-muted-foreground">Duration</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-blue-400">{viewerCount.toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground">Viewers</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-green-400">{newFollowers}</div>
+                    <div className="text-xs text-muted-foreground">New Followers</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-yellow-400">{coinsEarned}</div>
+                    <div className="text-xs text-muted-foreground">Coins Earned</div>
+                  </div>
+                </div>
+              </div>
               
               <div className="flex gap-3">
                 <Button
