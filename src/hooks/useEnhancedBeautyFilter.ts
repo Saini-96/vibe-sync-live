@@ -20,7 +20,7 @@ export interface BeautyFilterSettings {
 export const useEnhancedBeautyFilter = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<string>('natural');
+  const [selectedPreset, setSelectedPreset] = useState<string>('none');
   
   const presets: BeautyFilterPreset[] = [
     {
@@ -110,6 +110,7 @@ export const useEnhancedBeautyFilter = () => {
   ];
 
   const getCurrentSettings = useCallback(() => {
+    if (selectedPreset === 'none') return null;
     const preset = presets.find(p => p.id === selectedPreset);
     return preset?.settings || presets[0].settings;
   }, [selectedPreset]);
@@ -136,8 +137,14 @@ export const useEnhancedBeautyFilter = () => {
       ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
       const settings = getCurrentSettings();
+      
+      // If no filter selected, just return original
+      if (!settings) {
+        setIsProcessing(false);
+        return canvas;
+      }
 
-      // Apply beauty filters in order
+      // Apply beauty filters in order with better performance
       if (settings.skinSmoothing > 0) {
         applySkinSmoothing(ctx, canvas, settings.skinSmoothing);
       }

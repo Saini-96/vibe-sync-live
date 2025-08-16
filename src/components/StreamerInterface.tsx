@@ -135,27 +135,34 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
 
   const startNudityMonitoring = () => {
     const monitorInterval = setInterval(async () => {
-      if (videoRef.current && mediaAccess.stream && mediaAccess.isCameraOn && videoRef.current.readyState >= 2) {
-        const result = await nudityDetection.checkVideoFrame(videoRef.current);
-        
-        if (result.isNudityDetected) {
-          if (result.blocked || result.warnings >= 3) {
-            toast({
-              title: "Stream Automatically Ended",
-              description: "Your stream has been terminated due to inappropriate content violations. Please review our community guidelines before streaming again.",
-              variant: "destructive"
-            });
-            handleEndStream();
-          } else {
-            toast({
-              title: `⚠️ Content Warning ${result.warnings}/3`,
-              description: `Inappropriate content detected (${Math.round(result.confidence * 100)}% confidence). Please adjust your content immediately or your stream will be terminated.`,
-              variant: "destructive"
-            });
+      if (videoRef.current && mediaAccess.stream && mediaAccess.isCameraOn && isLive) {
+        try {
+          const result = await nudityDetection.checkVideoFrame(videoRef.current);
+          
+          if (result.isNudityDetected) {
+            console.log(`Nudity detected - Warning ${result.warnings}/3, Confidence: ${result.confidence}`);
+            
+            if (result.blocked || result.warnings >= 3) {
+              toast({
+                title: "🚨 Stream Automatically Ended",
+                description: "Your stream has been terminated due to inappropriate content violations. Please review our community guidelines before streaming again.",
+                variant: "destructive"
+              });
+              handleEndStream();
+              return;
+            } else {
+              toast({
+                title: `⚠️ Content Warning ${result.warnings}/3`,
+                description: `Inappropriate content detected (${Math.round(result.confidence * 100)}% confidence). Please adjust your content immediately or your stream will be terminated.`,
+                variant: "destructive"
+              });
+            }
           }
+        } catch (error) {
+          console.error('Nudity detection error:', error);
         }
       }
-    }, 3000); // Check every 3 seconds for more responsive detection
+    }, 2000); // Check every 2 seconds for better real-time detection
 
     // Store interval for cleanup
     (window as any).nudityMonitorInterval = monitorInterval;
@@ -451,6 +458,15 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
               </div>
               
               <div className="grid grid-cols-3 gap-3">
+                <Button
+                  key="none"
+                  variant={beautyFilter.selectedPreset === 'none' ? "default" : "outline"}
+                  onClick={() => beautyFilter.setSelectedPreset('none')}
+                  className="flex flex-col items-center p-3 h-auto"
+                >
+                  <span className="text-lg mb-1">❌</span>
+                  <span className="text-xs">None</span>
+                </Button>
                 {beautyFilter.presets.map((preset) => (
                   <Button
                     key={preset.id}
@@ -529,12 +545,22 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
             />
             <canvas
               ref={(canvas) => {
-                if (canvas && videoRef.current) {
+                if (canvas && videoRef.current && beautyFilter.selectedPreset) {
+                  // Apply beauty filter continuously for live streaming
                   const updateFrame = () => {
-                    if (videoRef.current && !videoRef.current.paused && !videoRef.current.ended) {
+                    if (videoRef.current && !videoRef.current.paused && !videoRef.current.ended && beautyFilter.selectedPreset !== 'none') {
                       beautyFilter.applyBeautyFilter(videoRef.current, canvas);
+                      requestAnimationFrame(updateFrame);
+                    } else if (beautyFilter.selectedPreset === 'none') {
+                      // Show original video without filter
+                      const ctx = canvas.getContext('2d');
+                      if (ctx && videoRef.current) {
+                        canvas.width = videoRef.current.videoWidth || 640;
+                        canvas.height = videoRef.current.videoHeight || 480;
+                        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+                      }
+                      requestAnimationFrame(updateFrame);
                     }
-                    animationFrameRef.current = requestAnimationFrame(updateFrame);
                   };
                   updateFrame();
                 }
@@ -681,39 +707,6 @@ const StreamerInterface = ({ onEndStream }: StreamerInterfaceProps) => {
                         </span>
                         <span className="ml-2 text-white text-sm">{msg.message}</span>
                         
-                         {/* Moderation Controls - Only for non-streamer messages */}
-                        {!msg.isStreamer && (
-                          <div className="absolute -right-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-black/60 rounded-full p-1">
-                            <button
-                              onClick={() => handleModerationAction('mute', msg.id, msg.userId || '', msg.username)}
-                              className="text-xs text-orange-400 hover:text-orange-300 p-1 rounded-full hover:bg-white/20"
-                              title="Mute user"
-                            >
-                              <MicOff className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleModerationAction('ban', msg.id, msg.userId || '', msg.username)}
-                              className="text-xs text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-white/20"
-                              title="Ban user"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleModerationAction('pin', msg.id, msg.userId || '', msg.username)}
-                              className="text-xs text-yellow-400 hover:text-yellow-300 p-1 rounded-full hover:bg-white/20"
-                              title="Pin message"
-                            >
-                              <Pin className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleModerationAction('delete', msg.id, msg.userId || '', msg.username)}
-                              className="text-xs text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-white/20"
-                              title="Delete message"
-                            >
-                              <Shield className="w-3 h-3" />
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </motion.div>
                   );

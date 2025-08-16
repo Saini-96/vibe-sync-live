@@ -364,7 +364,7 @@ const LiveStreamViewer = ({ streamId, onBack, onGiftPanel, giftAnimation: extern
                       
                       {/* Moderation Controls - Only visible to assigned moderators */}
                       {!msg.isStreamer && (
-                        <div className="absolute -right-16 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-black/60 rounded-full p-1">
+                        <div className="absolute -right-14 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-black/60 rounded-full p-1">
                           <button
                             onClick={() => console.log('Mute user:', msg.username)}
                             className="text-xs text-orange-400 hover:text-orange-300 p-1 rounded-full hover:bg-white/20"

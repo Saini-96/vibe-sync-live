@@ -27,71 +27,108 @@ export const useGiftAnimations = () => {
   const particleAnimationRef = useRef<number>();
 
   const createParticleEffect = useCallback((centerX: number, centerY: number, intensity: number) => {
+    // Clear any existing animation
+    if (particleAnimationRef.current) {
+      cancelAnimationFrame(particleAnimationRef.current);
+    }
+    
     const newParticles: ParticleEffect[] = [];
-    const particleCount = intensity > 500 ? 60 : intensity > 100 ? 40 : 20;
+    const particleCount = intensity > 500 ? 30 : intensity > 100 ? 20 : 15; // Reduced particle count for better performance
     
     for (let i = 0; i < particleCount; i++) {
       newParticles.push({
         id: Math.random().toString(36),
-        x: centerX + (Math.random() - 0.5) * 100,
-        y: centerY + (Math.random() - 0.5) * 100,
-        vx: (Math.random() - 0.5) * 8,
-        vy: (Math.random() - 0.5) * 8,
+        x: centerX + (Math.random() - 0.5) * 80,
+        y: centerY + (Math.random() - 0.5) * 80,
+        vx: (Math.random() - 0.5) * 6,
+        vy: (Math.random() - 0.5) * 6,
         life: 1,
         color: intensity > 500 ? '#FFD700' : intensity > 100 ? '#FF69B4' : '#87CEEB',
-        size: intensity > 500 ? 8 : intensity > 100 ? 6 : 4
+        size: intensity > 500 ? 6 : intensity > 100 ? 5 : 4
       });
     }
     
     setParticles(newParticles);
     
-    // Animate particles
+    let animationCount = 0;
+    const maxAnimations = 60; // Limit animation frames to prevent infinite loops
+    
+    // Optimized particle animation
     const animateParticles = () => {
-      setParticles(prev => 
-        prev.map(particle => ({
+      animationCount++;
+      
+      setParticles(prev => {
+        const filtered = prev.map(particle => ({
           ...particle,
           x: particle.x + particle.vx,
           y: particle.y + particle.vy,
-          life: particle.life - 0.02
-        })).filter(particle => particle.life > 0)
-      );
+          life: particle.life - 0.025 // Slightly faster fade
+        })).filter(particle => particle.life > 0);
+        
+        // Stop animation when no particles or max reached
+        if (filtered.length === 0 || animationCount >= maxAnimations) {
+          if (particleAnimationRef.current) {
+            cancelAnimationFrame(particleAnimationRef.current);
+            particleAnimationRef.current = undefined;
+          }
+          return [];
+        }
+        
+        return filtered;
+      });
       
-      if (particles.length > 0) {
+      if (animationCount < maxAnimations) {
         particleAnimationRef.current = requestAnimationFrame(animateParticles);
       }
     };
     
     particleAnimationRef.current = requestAnimationFrame(animateParticles);
-  }, [particles.length]);
+  }, []);
 
   const playGiftAnimation = useCallback((options: GiftAnimationOptions) => {
-    // Set the current animation
-    setCurrentAnimation(options);
+    // Clear any existing animation first
+    if (particleAnimationRef.current) {
+      cancelAnimationFrame(particleAnimationRef.current);
+    }
+    setCurrentAnimation(null);
+    setParticles([]);
+    setAcknowledgmentMessage(null);
 
-    // Create acknowledgment message
-    const message = `${options.senderUsername} sent ${options.giftEmoji} ${options.giftName} to ${options.streamerName}!`;
-    setAcknowledgmentMessage(message);
-
-    // Create particle effects
-    createParticleEffect(window.innerWidth * 0.6, window.innerHeight * 0.4, options.value);
-
-    // Play sound effect based on gift value
-    playGiftSound(options.value);
-
-    // Clear animation after duration based on gift value
-    const animationDuration = options.value >= 500 ? 8000 : options.value >= 100 ? 6000 : 4000;
+    // Small delay to ensure cleanup
     setTimeout(() => {
-      setCurrentAnimation(null);
-      setParticles([]);
-      if (particleAnimationRef.current) {
-        cancelAnimationFrame(particleAnimationRef.current);
-      }
-    }, animationDuration);
+      // Set the new animation
+      setCurrentAnimation(options);
 
-    // Clear acknowledgment message after duration
-    setTimeout(() => {
-      setAcknowledgmentMessage(null);
-    }, animationDuration + 2000);
+      // Create acknowledgment message for chat
+      const message = `${options.senderUsername} sent ${options.giftEmoji} ${options.giftName} to ${options.streamerName}!`;
+      setAcknowledgmentMessage(message);
+
+      // Create particle effects with performance optimization
+      createParticleEffect(window.innerWidth * 0.5, window.innerHeight * 0.3, options.value);
+
+      // Play sound effect based on gift value
+      playGiftSound(options.value);
+
+      // Clear animation after optimized duration
+      const animationDuration = options.value >= 500 ? 5000 : options.value >= 100 ? 4000 : 3000;
+      
+      const cleanupAnimation = setTimeout(() => {
+        setCurrentAnimation(null);
+        setParticles([]);
+        if (particleAnimationRef.current) {
+          cancelAnimationFrame(particleAnimationRef.current);
+          particleAnimationRef.current = undefined;
+        }
+      }, animationDuration);
+
+      // Clear acknowledgment message after shorter duration
+      const cleanupMessage = setTimeout(() => {
+        setAcknowledgmentMessage(null);
+      }, animationDuration + 1000);
+
+      // Store timeouts for potential cleanup
+      (window as any).giftTimeouts = { cleanupAnimation, cleanupMessage };
+    }, 50);
   }, [createParticleEffect]);
 
   const playGiftSound = (value: number) => {
